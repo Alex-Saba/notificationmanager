@@ -1,0 +1,41 @@
+flowchart TD
+    A["Projet principal"] --> B["Event metier emis
+    ex: InvoicePaid, UserRegistered"]
+
+    B --> C["Le package recoit une event_key
+    ex: invoice.paid"]
+
+    C --> D["CommunicationService"]
+
+    D --> E["Recherche de configuration
+    par event_key"]
+    E --> F["Template associe"]
+    E --> G["Canaux actifs"]
+    E --> H["Regles metier
+    langue, priorite, fallback, delai"]
+
+    F --> I["TemplateRenderer"]
+    I --> J["Contenu final"]
+
+    G --> K["MailChannel"]
+    G --> L["SmsChannel"]
+    G --> M["DatabaseNotificationChannel"]
+    G --> N["DocumentGenerator"]
+
+    J --> K
+    J --> L
+    J --> M
+    J --> N
+
+    N --> O["Document genere
+    PDF, DOCX..."]
+
+    O --> K
+    O --> P["Stockage document"]
+
+    K --> Q["Envoi effectif"]
+    L --> Q
+    M --> Q
+    P --> Q
+
+    Q --> R["Logs / Historique / Statuts"]

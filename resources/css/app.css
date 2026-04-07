@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+.wysiwyg-editor:empty::before {
+    color: #94a3b8;
+    content: attr(data-placeholder);
+    pointer-events: none;
+}
+
+.wysiwyg-editor h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 0.75rem;
+}
+
+.wysiwyg-editor h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0 0 0.75rem;
+}
+
+.wysiwyg-editor p {
+    margin: 0 0 0.75rem;
+}
+
+.wysiwyg-editor ul {
+    list-style: disc;
+    margin: 0 0 0.75rem 1.5rem;
+}
+
+.wysiwyg-editor a {
+    color: #475569;
+    text-decoration: underline;
+}
+
+.wysiwyg-editor .template-tag {
+    background: #dcdbda;
+    border: 1px solid #cfcfce;
+    border-radius: 9999px;
+    color: #334155;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0 0.15rem;
+    padding: 0.35rem 0.6rem;
+    vertical-align: middle;
+    white-space: nowrap;
+}
