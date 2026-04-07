@@ -4,7 +4,7 @@ return [
     'package_name' => 'acl/notification-manager',
 
     'ui' => [
-        'enabled' => env('COMMUNICATIONS_UI_ENABLED', true),
+        'enabled' => env('COMMUNICATIONS_UI_ENABLED', false),
         'prefix' => env('COMMUNICATIONS_UI_PREFIX', 'communications'),
         'middleware' => ['web'],
         'name_prefix' => 'communications.',
