@@ -308,15 +308,6 @@ Regle de separation recommandee :
 - [ ] `recipient_type`
 - [ ] `recipient_id`
 
-### `generated_documents`
-
-- [ ] `id`
-- [ ] `template_id`
-- [ ] `path`
-- [ ] `disk`
-- [ ] `mime_type`
-- [ ] `status`
-
 ## Interfaces cibles
 
 ```php
@@ -341,11 +332,6 @@ interface ChannelDriverInterface
 {
     public function send(mixed $recipient, array $payload): mixed;
 }
-
-interface DocumentGeneratorInterface
-{
-    public function generate(mixed $template, array $data = []): mixed;
-}
 ```
 
 ## V1 recommandee
@@ -354,5 +340,4 @@ interface DocumentGeneratorInterface
 - [ ] 1 template + 1 regle associee
 - [ ] 2 canaux : `database` et `mail`
 - [ ] 1 historique des envois
-- [ ] 1 generation de document PDF basique
 - [ ] 1 exemple d'integration avec un event du projet principal

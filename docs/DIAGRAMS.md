@@ -93,13 +93,11 @@ flowchart TD
 flowchart TD
     A["CommunicationService"] --> B["NotificationSent"]
     A --> C["NotificationFailed"]
-    A --> D["NotificationDocumentGenerated"]
-    A --> E["CommunicationOrchestrated"]
+    A --> D["CommunicationOrchestrated"]
 
     B --> F["CommunicationOutcomeListener"]
     C --> F
-    D --> F
-    E --> G["CommunicationExposureListener"]
+    D --> G["CommunicationExposureListener"]
 
     F --> H["HostReactionRequested"]
     G --> I["HostExposureRequested"]

@@ -15,7 +15,6 @@ class CommunicationMigrationsTest extends TestCase
         $this->assertTrue(Schema::hasTable('communication_templates'));
         $this->assertTrue(Schema::hasTable('communication_rules'));
         $this->assertTrue(Schema::hasTable('communications'));
-        $this->assertTrue(Schema::hasTable('generated_documents'));
     }
 
     public function test_communication_rules_table_contains_expected_columns(): void
