@@ -1,6 +1,6 @@
-# ACL NotificationManager
+# NotificationManager
 
-`acl/communications` fournit un module transverse de notifications pour Laravel, aligne sur une architecture `NotificationManager`.
+`acl/notification-manager` fournit un package Laravel de notifications, aligne sur une architecture `NotificationManager`.
 
 Le module permet de :
 - declencher une notification via une cle unique
@@ -9,6 +9,17 @@ Le module permet de :
 - resoudre un template par priorite `options -> DB -> config`
 - travailler sur un catalogue runtime centralise en base
 - rester agnostique des modules metier
+
+## Structure du depot
+
+Le coeur distribuable du package est porte par :
+- `src/`
+- `config/communications.php`
+- `database/migrations/communications`
+- `routes/communications-ui.php`
+
+Le depot contient aussi une application Laravel locale de demonstration pour developper et tester le package.
+Cette application n'est pas destinee a etre publiee comme partie du package Composer.
 
 ## Objectif
 
@@ -41,13 +52,13 @@ Exemples :
 ## Installation
 
 ```bash
-composer update acl/communications
+composer require acl/notification-manager
 php artisan vendor:publish --tag=communications-config
 php artisan vendor:publish --tag=communications-migrations
 php artisan migrate
 ```
 
-Le provider principal est [CommunicationServiceProvider.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/CommunicationServiceProvider.php).
+Le provider principal du package est `src/CommunicationServiceProvider.php`.
 
 ## Declaration des evenements
 
@@ -118,7 +129,7 @@ Elle journalise les envois :
 
 ## Interface principale
 
-Le contrat cible est [NotificationManagerInterface.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Contracts/NotificationManagerInterface.php).
+Le contrat cible est `Acl\Communications\Contracts\NotificationManagerInterface`.
 
 ```php
 use Acl\Communications\Contracts\NotificationManagerInterface;
@@ -165,7 +176,7 @@ Exemple :
 - `request.created.email` -> channel `email`
 - `billing.reminder.in_app` -> channel `in_app`
 
-Le manager route ensuite vers le driver declare dans [communications.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/config/communications.php).
+Le manager route ensuite vers le driver declare dans `config/communications.php`.
 
 Configuration actuelle :
 
@@ -190,13 +201,13 @@ La priorite de resolution est :
 2. template en base par `event_key` et `tenant_id`
 3. fallback config via `config('events')`
 
-Implementation : [NotificationTemplateResolver.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Services/NotificationTemplateResolver.php)
+Implementation : `src/Services/NotificationTemplateResolver.php`
 
 ## Integration par evenement applicatif
 
 Le package supporte aussi un pont depuis un event Laravel du projet principal.
 
-Exemple : [RequestCreated.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/app/Events/RequestCreated.php)
+Exemple d'evenement hote local : `app/Events/RequestCreated.php`
 
 ```php
 Event::listen(RequestCreated::class, NotificationListener::class);
@@ -205,7 +216,7 @@ event(new RequestCreated($user, 'REQ-2026-001'));
 
 Dans ce cas :
 - l'event applicatif fournit la cle et le payload
-- [CommunicationService.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Services/CommunicationService.php) delegue ensuite a `NotificationManagerInterface`
+- `src/Services/CommunicationService.php` delegue ensuite a `NotificationManagerInterface`
 
 ## UI optionnelle
 
@@ -220,7 +231,7 @@ Routes UI par defaut :
 - `/communications/templates/{id}/edit`
 - `/communications/notifications`
 
-Le prefixe et les middlewares sont configurables dans [communications.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/config/communications.php).
+Le prefixe et les middlewares sont configurables dans `config/communications.php`.
 
 ## Commandes utiles
 
@@ -244,18 +255,15 @@ php artisan test
 npm run build
 ```
 
-Etat actuel verifie :
-- `php artisan test` : OK
-- `npm run build` : OK
+Dans ce depot, ces commandes valident l'application locale de demonstration qui sert de banc d'integration pour le package.
 
 ## Fichiers importants
 
-- [NotificationManagerInterface.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Contracts/NotificationManagerInterface.php)
-- [NotificationManager.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Services/NotificationManager.php)
-- [NotificationTemplateResolver.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Services/NotificationTemplateResolver.php)
-- [NotificationEvent.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Models/NotificationEvent.php)
-- [SyncNotificationEventsCommand.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Console/Commands/SyncNotificationEventsCommand.php)
-- [CommunicationService.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/Services/CommunicationService.php)
-- [CommunicationServiceProvider.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/src/CommunicationServiceProvider.php)
-- [events.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/config/events.php)
-- [communications.php](/Users/alexsaba-okouyi/Desktop/ACL/notifications/config/communications.php)
+- `src/Contracts/NotificationManagerInterface.php`
+- `src/Services/NotificationManager.php`
+- `src/Services/NotificationTemplateResolver.php`
+- `src/Models/NotificationEvent.php`
+- `src/Console/Commands/SyncNotificationEventsCommand.php`
+- `src/Services/CommunicationService.php`
+- `src/CommunicationServiceProvider.php`
+- `config/communications.php`
