@@ -7,5 +7,27 @@
 *.php diff=php
 
 /.github export-ignore
+/app export-ignore
+/bootstrap export-ignore
 CHANGELOG.md export-ignore
+/config/app.php export-ignore
+/config/auth.php export-ignore
+/config/cache.php export-ignore
+/config/database.php export-ignore
+/config/events.php export-ignore
+/config/filesystems.php export-ignore
+/config/logging.php export-ignore
+/config/mail.php export-ignore
+/config/queue.php export-ignore
+/config/services.php export-ignore
+/config/session.php export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/phpunit.xml export-ignore
+/public export-ignore
+/resources export-ignore
+/routes/console.php export-ignore
+/routes/web.php export-ignore
 .styleci.yml export-ignore
+/tests export-ignore
+/vite.config.js export-ignore
