@@ -60,6 +60,57 @@ php artisan migrate
 
 Le provider principal du package est `src/CommunicationServiceProvider.php`.
 
+## Procedure d'integration dans le projet principal
+
+Ordre recommande :
+1. installer le package avec Composer
+2. publier `config/communications.php`
+3. publier les migrations du package
+4. executer `php artisan migrate`
+5. declarer les `event_key` metier dans `config/events.php`
+6. synchroniser le catalogue runtime avec `php artisan notifications:sync`
+7. envoyer un premier message de test via `NotificationManagerInterface`
+
+Prerequis cote projet hote :
+- Laravel 12
+- PHP 8.2 minimum
+- une configuration mail exploitable si le channel `email` est utilise
+- un fichier `config/events.php` ou un mecanisme equivalent qui alimente `config('events')`
+
+## Configuration minimale du projet hote
+
+Exemple minimal de `config/events.php` :
+
+```php
+<?php
+
+return [
+    'request.created.email' => [
+        'label' => 'Request created email',
+        'payload' => [
+            'request_number' => 'required|string',
+            'requester_name' => 'required|string',
+            'user_email' => 'required|email',
+        ],
+        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistree.</p>',
+        'subject' => 'Nouvelle demande',
+    ],
+];
+```
+
+Exemple minimal de configuration mail dans le projet hote :
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="no-reply@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
 ## Declaration des evenements
 
 Les evenements ne sont pas declares dans le package comme source metier finale.
@@ -95,6 +146,43 @@ php artisan notifications:sync
 ```
 
 Cette commande lit `config('events')` puis met a jour la table `notification_events`.
+
+## Premier envoi manuel
+
+Une fois les evenements synchronises, un premier envoi peut etre teste directement :
+
+```php
+use Acl\Communications\Contracts\NotificationManagerInterface;
+
+app(NotificationManagerInterface::class)->dispatch(
+    'request.created.email',
+    [
+        'request_number' => 'REQ-2026-001',
+        'requester_name' => 'Alex',
+        'user_email' => 'alex@example.test',
+    ],
+);
+```
+
+Sequence minimale de verification :
+
+```bash
+php artisan notifications:sync
+php artisan tinker
+```
+
+Puis dans Tinker :
+
+```php
+app(Acl\Communications\Contracts\NotificationManagerInterface::class)->dispatch(
+    'request.created.email',
+    [
+        'request_number' => 'REQ-2026-001',
+        'requester_name' => 'Alex',
+        'user_email' => 'alex@example.test',
+    ],
+);
+```
 
 ## Structure runtime
 
@@ -209,14 +297,82 @@ Le package supporte aussi un pont depuis un event Laravel du projet principal.
 
 Exemple d'evenement hote local : `app/Events/RequestCreated.php`
 
+Exemple minimal d'evenement hote :
+
 ```php
+<?php
+
+namespace App\Events;
+
+use Acl\Communications\Contracts\CommunicationEventInterface;
+
+class RequestCreated implements CommunicationEventInterface
+{
+    public function __construct(
+        public string $requestNumber,
+        public string $requesterName,
+        public string $userEmail,
+        public ?int $userId = null,
+    ) {
+    }
+
+    public function communicationEventKey(): string
+    {
+        return 'request.created.email';
+    }
+
+    public function communicationRecipient(): array|string
+    {
+        return [
+            'address' => $this->userEmail,
+            'type' => 'user',
+            'id' => $this->userId !== null ? (string) $this->userId : null,
+            'name' => $this->requesterName,
+        ];
+    }
+
+    public function communicationData(): array
+    {
+        return [
+            'request_number' => $this->requestNumber,
+            'requester_name' => $this->requesterName,
+            'user_email' => $this->userEmail,
+            'user_id' => $this->userId !== null ? (string) $this->userId : null,
+        ];
+    }
+}
+```
+
+Enregistrement du listener dans le projet hote :
+
+```php
+use Acl\Communications\Listeners\NotificationListener;
+use App\Events\RequestCreated;
+use Illuminate\Support\Facades\Event;
+
 Event::listen(RequestCreated::class, NotificationListener::class);
-event(new RequestCreated($user, 'REQ-2026-001'));
+event(new RequestCreated('REQ-2026-001', 'Alex', 'alex@example.test', 42));
 ```
 
 Dans ce cas :
 - l'event applicatif fournit la cle et le payload
 - `src/Services/CommunicationService.php` delegue ensuite a `NotificationManagerInterface`
+
+## Checklist d'installation rapide
+
+```bash
+composer require acl/notification-manager
+php artisan vendor:publish --tag=communications-config
+php artisan vendor:publish --tag=communications-migrations
+php artisan migrate
+php artisan notifications:sync
+```
+
+Puis verifier :
+- la table `notification_events` contient les cles attendues
+- la configuration mail du projet hote est correcte
+- un appel a `NotificationManagerInterface::dispatch()` cree une ligne dans `communications`
+- le channel attendu est bien configure dans `config/communications.php`
 
 ## UI optionnelle
 
@@ -225,6 +381,9 @@ Le depot contient aussi une UI Vue de demonstration pour :
 - gerer les regles liees
 - visualiser des notifications in-app
 
+Dans un projet principal, cette UI est desactivee par defaut pour eviter les collisions de routes et de vues.
+Il faut l'activer explicitement si elle est voulue.
+
 Routes UI par defaut :
 - `/communications/templates`
 - `/communications/templates/create`
@@ -232,6 +391,14 @@ Routes UI par defaut :
 - `/communications/notifications`
 
 Le prefixe et les middlewares sont configurables dans `config/communications.php`.
+
+Activation explicite dans le projet hote :
+
+```env
+COMMUNICATIONS_UI_ENABLED=true
+COMMUNICATIONS_UI_PREFIX=communications
+COMMUNICATIONS_UI_VIEW=welcome
+```
 
 ## Commandes utiles
 
