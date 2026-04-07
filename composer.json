@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "acl/communications",
-    "type": "project",
-    "description": "Reusable Laravel communications package with a bundled demo application.",
-    "keywords": ["laravel", "communications", "notifications", "messaging"],
+    "name": "acl/notification-manager",
+    "type": "library",
+    "description": "NotificationManager for Laravel with runtime event catalog, templates, and channel routing.",
+    "keywords": ["laravel", "notification-manager", "notifications", "messaging"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

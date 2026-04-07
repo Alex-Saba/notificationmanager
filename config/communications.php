@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'package_name' => 'acl/communications',
+    'package_name' => 'acl/notification-manager',
 
     'ui' => [
         'enabled' => env('COMMUNICATIONS_UI_ENABLED', true),
