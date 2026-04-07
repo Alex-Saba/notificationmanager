@@ -4,7 +4,6 @@ namespace Acl\Communications\Services;
 
 use Acl\Communications\Contracts\CommunicationReactionPolicyInterface;
 use Acl\Communications\Contracts\CommunicationResultConsumerInterface;
-use Acl\Communications\Events\NotificationDocumentGenerated;
 use Acl\Communications\Events\NotificationFailed;
 use Acl\Communications\Events\NotificationSent;
 use InvalidArgumentException;
@@ -18,8 +17,7 @@ class CommunicationResultConsumer implements CommunicationResultConsumerInterfac
     public function canConsume(object $event): bool
     {
         return $event instanceof NotificationSent
-            || $event instanceof NotificationFailed
-            || $event instanceof NotificationDocumentGenerated;
+            || $event instanceof NotificationFailed;
     }
 
     public function consume(object $event): array

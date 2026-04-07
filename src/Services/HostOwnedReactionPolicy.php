@@ -3,7 +3,6 @@
 namespace Acl\Communications\Services;
 
 use Acl\Communications\Contracts\CommunicationReactionPolicyInterface;
-use Acl\Communications\Events\NotificationDocumentGenerated;
 use Acl\Communications\Events\NotificationFailed;
 use Acl\Communications\Events\NotificationSent;
 
@@ -22,12 +21,6 @@ class HostOwnedReactionPolicy implements CommunicationReactionPolicyInterface
                 'owner' => 'host',
                 'should_react' => true,
                 'reaction' => 'handle_failure',
-                'event_name' => $event->eventName(),
-            ],
-            $event instanceof NotificationDocumentGenerated => [
-                'owner' => 'host',
-                'should_react' => true,
-                'reaction' => 'publish_document_reference',
                 'event_name' => $event->eventName(),
             ],
             default => [

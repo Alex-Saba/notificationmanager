@@ -11,14 +11,11 @@ use Acl\Communications\Contracts\CommunicationExposureConsumerInterface;
 use Acl\Communications\Contracts\CommunicationReactionPolicyInterface;
 use Acl\Communications\Contracts\CommunicationResultConsumerInterface;
 use Acl\Communications\Contracts\CommunicationServiceInterface;
-use Acl\Communications\Contracts\DocumentGeneratorInterface;
 use Acl\Communications\Contracts\NotificationManagerInterface;
 use Acl\Communications\Contracts\RuleResolverInterface;
 use Acl\Communications\Contracts\TemplateRendererInterface;
 use Acl\Communications\Contracts\TemplateRepositoryInterface;
-use Acl\Communications\Documents\InlineDocumentGenerator;
 use Acl\Communications\Events\CommunicationOrchestrated;
-use Acl\Communications\Events\NotificationDocumentGenerated;
 use Acl\Communications\Events\NotificationFailed;
 use Acl\Communications\Events\NotificationSent;
 use Acl\Communications\Listeners\CommunicationExposureListener;
@@ -47,7 +44,6 @@ class CommunicationServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/communications.php', 'communications');
 
         $this->app->singleton(TemplateRendererInterface::class, BladeTemplateRenderer::class);
-        $this->app->singleton(DocumentGeneratorInterface::class, InlineDocumentGenerator::class);
         $this->app->singleton(ChannelDriverInterface::class, NullChannel::class);
         $this->app->singleton(NotificationTemplateResolver::class, NotificationTemplateResolver::class);
         $this->app->singleton(NotificationManagerInterface::class, NotificationManager::class);
@@ -71,7 +67,6 @@ class CommunicationServiceProvider extends ServiceProvider
 
         Event::listen(NotificationSent::class, CommunicationOutcomeListener::class);
         Event::listen(NotificationFailed::class, CommunicationOutcomeListener::class);
-        Event::listen(NotificationDocumentGenerated::class, CommunicationOutcomeListener::class);
         Event::listen(CommunicationOrchestrated::class, CommunicationExposureListener::class);
 
         $this->publishes([
