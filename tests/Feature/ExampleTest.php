@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Events\RequestCreated;
-use App\Models\User;
+use Acl\Communications\Models\Communication;
 use Acl\Communications\Models\CommunicationRule;
 use Acl\Communications\Models\CommunicationTemplate;
 use Acl\Communications\Models\NotificationEvent;
-use Illuminate\Support\Facades\Artisan;
+use App\Events\RequestCreated;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -89,187 +90,6 @@ class ExampleTest extends TestCase
     {
         $this->get('/')
             ->assertRedirect(route('communications.templates.page'));
-    }
-
-    public function test_the_create_page_returns_the_vue_shell(): void
-    {
-        $this->get(route('communications.templates.create.page'))
-            ->assertOk()
-            ->assertSee('id="app"', false);
-    }
-
-    public function test_the_edit_page_returns_the_vue_shell(): void
-    {
-        $template = $this->createTemplate();
-
-        $this->get(route('communications.templates.edit.page', $template))
-            ->assertOk()
-            ->assertSee('id="app"', false);
-    }
-
-    public function test_creating_a_template_also_creates_its_linked_rule(): void
-    {
-        $response = $this->postJson(route('communications.api.templates.store'), [
-            'name' => 'Relance facture',
-            'key' => 'payment-reminder',
-            'content' => '<p>Merci de regler votre facture.</p>',
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 200,
-            'fallback' => [],
-            'delay' => 30,
-            'active' => true,
-        ]);
-
-        $response->assertCreated()
-            ->assertJsonPath('template.key', 'payment-reminder')
-            ->assertJsonPath('template.rule.event_key', 'billing.payment-reminder.email')
-            ->assertJsonPath('template.rule.channels.0', 'mail');
-
-        $template = CommunicationTemplate::query()->firstOrFail();
-
-        $this->assertDatabaseHas('communication_templates', [
-            'id' => $template->id,
-            'key' => 'payment-reminder',
-            'active' => true,
-        ]);
-
-        $this->assertDatabaseHas('communication_rules', [
-            'template_id' => $template->id,
-            'event_key' => 'billing.payment-reminder.email',
-            'priority' => 200,
-            'delay' => 30,
-            'active' => true,
-        ]);
-    }
-
-    public function test_creating_a_template_rejects_an_event_key_not_declared_by_the_host_project(): void
-    {
-        $this->postJson(route('communications.api.templates.store'), [
-            'name' => 'Relance facture',
-            'key' => 'payment-reminder',
-            'content' => '<p>Merci de regler votre facture.</p>',
-            'event_key' => 'unknown.event',
-            'channels' => ['mail'],
-            'priority' => 200,
-            'fallback' => [],
-            'delay' => 30,
-            'active' => true,
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['event_key']);
-    }
-
-    public function test_the_same_template_key_cannot_exist_twice(): void
-    {
-        $this->postJson(route('communications.api.templates.store'), [
-            'name' => 'Relance facture',
-            'key' => 'payment-reminder',
-            'content' => '<p>Version FR</p>',
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 100,
-            'fallback' => [],
-            'delay' => 0,
-            'active' => true,
-        ])->assertCreated();
-
-        $this->postJson(route('communications.api.templates.store'), [
-            'name' => 'Payment reminder bis',
-            'key' => 'payment-reminder',
-            'content' => '<p>Autre version</p>',
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 100,
-            'fallback' => [],
-            'delay' => 0,
-            'active' => true,
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['key']);
-
-        $this->assertDatabaseCount('communication_templates', 1);
-        $this->assertDatabaseHas('communication_templates', [
-            'key' => 'payment-reminder',
-        ]);
-    }
-
-    public function test_a_rule_can_be_updated_without_changing_template_content(): void
-    {
-        $template = $this->createTemplate([
-            'content' => '<p>Contenu original</p>',
-        ]);
-
-        $response = $this->patchJson(route('communications.api.templates.rule.update', $template), [
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 300,
-            'fallback' => [],
-            'delay' => 45,
-            'active' => false,
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('template.content', '<p>Contenu original</p>')
-            ->assertJsonPath('template.rule.channels.0', 'mail')
-            ->assertJsonPath('template.rule.priority', 300)
-            ->assertJsonPath('template.rule.active', false);
-
-        $this->assertDatabaseHas('communication_rules', [
-            'template_id' => $template->id,
-            'priority' => 300,
-            'delay' => 45,
-            'active' => false,
-        ]);
-    }
-
-    public function test_a_template_and_its_rule_can_be_updated_together(): void
-    {
-        $template = $this->createTemplate();
-
-        $response = $this->putJson(route('communications.api.templates.update', $template), [
-            'name' => 'Relance paiement revisee',
-            'key' => 'payment-reminder',
-            'content' => '<h1>Hello</h1><p>Updated copy.</p>',
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 150,
-            'fallback' => [],
-            'delay' => 5,
-            'active' => true,
-        ]);
-
-        $response->assertOk()
-            ->assertJsonPath('template.name', 'Relance paiement revisee')
-            ->assertJsonPath('template.content', '<h1>Hello</h1><p>Updated copy.</p>')
-            ->assertJsonPath('template.rule.channels.0', 'mail');
-
-        $this->assertDatabaseHas('communication_templates', [
-            'id' => $template->id,
-            'name' => 'Relance paiement revisee',
-        ]);
-    }
-
-    public function test_rule_activation_can_be_toggled_via_the_workflow(): void
-    {
-        $template = $this->createTemplate(['active' => true]);
-
-        $this->patchJson(route('communications.api.templates.rule.update', $template), [
-            'event_key' => 'billing.payment-reminder.email',
-            'channels' => ['mail'],
-            'priority' => 100,
-            'fallback' => [],
-            'delay' => 0,
-            'active' => false,
-        ])->assertOk()
-            ->assertJsonPath('template.rule.active', false);
-
-        $this->assertDatabaseHas('communication_templates', [
-            'id' => $template->id,
-            'active' => false,
-        ]);
-        $this->assertDatabaseHas('communication_rules', [
-            'template_id' => $template->id,
-            'active' => false,
-        ]);
     }
 
     public function test_notifications_demo_page_returns_the_vue_shell(): void
@@ -461,9 +281,9 @@ class ExampleTest extends TestCase
         return $template->fresh('rule');
     }
 
-    protected function createNotification(array $overrides = []): \Acl\Communications\Models\Communication
+    protected function createNotification(array $overrides = []): Communication
     {
-        return \Acl\Communications\Models\Communication::query()->create([
+        return Communication::query()->create([
             'correlation_id' => 'test-correlation-id',
             'event_key' => $overrides['event_key'] ?? 'billing.reminder.in_app',
             'channel' => 'in_app',

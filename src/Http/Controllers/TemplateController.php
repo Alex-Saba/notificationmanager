@@ -2,16 +2,14 @@
 
 namespace Acl\Communications\Http\Controllers;
 
-use Acl\Communications\Models\NotificationEvent;
 use Acl\Communications\Models\CommunicationTemplate;
+use Acl\Communications\Models\NotificationEvent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TemplateController extends Controller
@@ -19,18 +17,6 @@ class TemplateController extends Controller
     public function templatesPage(): View
     {
         return $this->shellView('templates', 'list');
-    }
-
-    public function createPage(): View
-    {
-        return $this->shellView('templates', 'create');
-    }
-
-    public function editPage(string $template): View
-    {
-        return $this->shellView('templates', 'edit', [
-            'editingTemplateId' => (int) $template,
-        ]);
     }
 
     public function index(): JsonResponse
@@ -57,154 +43,6 @@ class TemplateController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
-    {
-        $validated = $request->validate($this->templateRules());
-        $key = $this->resolveTemplateKey($validated);
-
-        if ($this->baseTemplateQuery()->where('key', $key)->exists()) {
-            return response()->json([
-                'message' => 'Un template avec cette cle existe deja.',
-                'errors' => [
-                    'key' => ['Un template avec cette cle existe deja.'],
-                ],
-            ], 422);
-        }
-
-        $template = DB::transaction(function () use ($validated, $key) {
-            $channels = $this->normalizeStringArray($validated['channels']);
-            $fallback = $this->normalizeStringArray($validated['fallback'] ?? []);
-
-            $template = $this->baseTemplateQuery()->create([
-                'name' => $validated['name'],
-                'key' => $key,
-                'event_key' => $this->resolveEventKey($key, $validated['event_key'] ?? null),
-                'channel' => count($channels) === 1 ? $channels[0] : null,
-                'content' => trim($validated['content']),
-                'active' => $validated['active'],
-            ]);
-
-            $template->rule()->create([
-                'event_key' => $template->event_key,
-                'channels' => $channels,
-                'priority' => $validated['priority'],
-                'fallback' => $fallback,
-                'delay' => $validated['delay'],
-                'active' => $validated['active'],
-            ]);
-
-            return $template->load('rule');
-        });
-
-        return response()->json([
-            'message' => 'Template cree avec succes.',
-            'template' => $this->transformTemplate($template),
-        ], 201);
-    }
-
-    public function update(Request $request, string $template): JsonResponse
-    {
-        $validated = $request->validate($this->templateRules(isUpdate: true));
-        $resolvedTemplate = $this->baseTemplateQuery()
-            ->with('rule')
-            ->findOrFail((int) $template);
-
-        $key = $this->resolveTemplateKey($validated, $resolvedTemplate);
-
-        if ($this->baseTemplateQuery()
-            ->where('id', '!=', $resolvedTemplate->id)
-            ->where('key', $key)
-            ->exists()) {
-            return response()->json([
-                'message' => 'Un template avec cette cle existe deja.',
-                'errors' => [
-                    'key' => ['Un template avec cette cle existe deja.'],
-                ],
-            ], 422);
-        }
-
-        DB::transaction(function () use ($resolvedTemplate, $validated, $key) {
-            $channels = $this->normalizeStringArray($validated['channels']);
-            $fallback = $this->normalizeStringArray($validated['fallback'] ?? []);
-
-            $resolvedTemplate->update([
-                'name' => $validated['name'],
-                'key' => $key,
-                'event_key' => $this->resolveEventKey($key, $validated['event_key']),
-                'channel' => count($channels) === 1 ? $channels[0] : null,
-                'content' => trim($validated['content']),
-                'active' => $validated['active'],
-            ]);
-
-            $resolvedTemplate->rule()->updateOrCreate(
-                ['template_id' => $resolvedTemplate->id],
-                [
-                    'event_key' => $resolvedTemplate->event_key,
-                    'channels' => $channels,
-                    'priority' => $validated['priority'],
-                    'fallback' => $fallback,
-                    'delay' => $validated['delay'],
-                    'active' => $validated['active'],
-                ]
-            );
-        });
-
-        $resolvedTemplate->refresh()->load('rule');
-
-        return response()->json([
-            'message' => 'Template mis a jour avec succes.',
-            'template' => $this->transformTemplate($resolvedTemplate),
-        ]);
-    }
-
-    public function updateRule(Request $request, string $template): JsonResponse
-    {
-        $validated = $request->validate([
-            'event_key' => ['nullable', 'string', 'max:180'],
-            'channels' => ['required', 'array', 'min:1'],
-            'channels.*' => ['string', 'in:mail'],
-            'priority' => ['required', 'integer', 'min:1'],
-            'fallback' => ['nullable', 'array'],
-            'fallback.*' => ['string', 'in:mail'],
-            'delay' => ['required', 'integer', 'min:0'],
-            'active' => ['required', 'boolean'],
-        ]);
-
-        $resolvedTemplate = $this->baseTemplateQuery()
-            ->with('rule')
-            ->findOrFail((int) $template);
-
-        DB::transaction(function () use ($resolvedTemplate, $validated) {
-            $channels = $this->normalizeStringArray($validated['channels']);
-            $fallback = $this->normalizeStringArray($validated['fallback'] ?? []);
-
-            $resolvedTemplate->update([
-                'event_key' => $this->resolveEventKey($resolvedTemplate->key, $validated['event_key'] ?? $resolvedTemplate->rule?->event_key),
-                'channel' => count($channels) === 1 ? $channels[0] : null,
-                'active' => $validated['active'],
-            ]);
-
-            $resolvedTemplate->rule()->updateOrCreate(
-                ['template_id' => $resolvedTemplate->id],
-                [
-                    'event_key' => $resolvedTemplate->event_key,
-                    'channels' => $channels,
-                    'priority' => $validated['priority'],
-                    'fallback' => $fallback,
-                    'delay' => $validated['delay'],
-                    'active' => $validated['active'],
-                ]
-            );
-        });
-
-        $resolvedTemplate->refresh()->load('rule');
-
-        return response()->json([
-            'message' => 'Regle mise a jour avec succes.',
-            'template' => $this->transformTemplate($resolvedTemplate),
-        ]);
-    }
-
     protected function shellView(string $page, string $mode, array $extra = []): View
     {
         return view((string) config('communications.ui.view', 'welcome'), [
@@ -221,13 +59,8 @@ class TemplateController extends Controller
             'routes' => [
                 'templates' => [
                     'page' => route($this->routeName('templates.page')),
-                    'createPage' => route($this->routeName('templates.create.page')),
-                    'editPagePattern' => route($this->routeName('templates.edit.page'), ['template' => '__TEMPLATE__']),
                     'index' => route($this->routeName('api.templates.index')),
                     'showPattern' => route($this->routeName('api.templates.show'), ['template' => '__TEMPLATE__']),
-                    'store' => route($this->routeName('api.templates.store')),
-                    'updatePattern' => route($this->routeName('api.templates.update'), ['template' => '__TEMPLATE__']),
-                    'updateRulePattern' => route($this->routeName('api.templates.rule.update'), ['template' => '__TEMPLATE__']),
                 ],
                 'notifications' => [
                     'page' => route($this->routeName('notifications.page')),
@@ -392,62 +225,6 @@ class TemplateController extends Controller
                 'active' => true,
             ]);
         });
-    }
-
-    protected function templateRules(bool $isUpdate = false): array
-    {
-        $eventKeys = $this->getAvailableEventKeys()->pluck('key')->all();
-        $eventKeyRules = [$isUpdate ? 'required' : 'nullable', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/'];
-
-        if ($eventKeys !== []) {
-            $eventKeyRules[] = Rule::in($eventKeys);
-        }
-
-        return [
-            'name' => ['required', 'string', 'max:120'],
-            'key' => ['nullable', 'string', 'max:120', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
-            'content' => ['required', 'string'],
-            'event_key' => $eventKeyRules,
-            'channels' => ['required', 'array', 'min:1'],
-            'channels.*' => ['string', 'in:mail,email,sms,in_app'],
-            'priority' => ['required', 'integer', 'min:1'],
-            'fallback' => ['nullable', 'array'],
-            'fallback.*' => ['string', 'in:mail,email,sms,in_app'],
-            'delay' => ['required', 'integer', 'min:0'],
-            'active' => ['required', 'boolean'],
-        ];
-    }
-
-    protected function resolveTemplateKey(array $validated, ?CommunicationTemplate $template = null): string
-    {
-        $candidate = trim((string) ($validated['key'] ?? ''));
-
-        if ($candidate !== '') {
-            return $candidate;
-        }
-
-        if ($template && $template->key !== '') {
-            return $template->key;
-        }
-
-        return Str::slug($validated['name']) ?: 'template';
-    }
-
-    protected function resolveEventKey(string $key, ?string $eventKey = null): string
-    {
-        $candidate = trim((string) $eventKey);
-
-        return $candidate !== '' ? $candidate : 'communications.'.$key.'.email';
-    }
-
-    protected function normalizeStringArray(array $values): array
-    {
-        return collect($values)
-            ->filter(fn (mixed $value) => is_string($value) && trim($value) !== '')
-            ->map(fn (string $value) => trim($value))
-            ->unique()
-            ->values()
-            ->all();
     }
 
     protected function baseTemplateQuery(): Builder
