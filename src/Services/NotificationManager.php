@@ -2,12 +2,10 @@
 
 namespace Acl\Communications\Services;
 
-use Acl\Communications\Contracts\ChannelDriverInterface;
 use Acl\Communications\Contracts\NotificationManagerInterface;
 use Acl\Communications\Contracts\TemplateRendererInterface;
 use Acl\Communications\Events\CommunicationOrchestrated;
-use Acl\Communications\Events\NotificationFailed;
-use Acl\Communications\Events\NotificationSent;
+use Acl\Communications\Jobs\SendCommunicationJob;
 use Acl\Communications\Models\Communication;
 use Acl\Communications\Models\NotificationEvent;
 use Illuminate\Support\Carbon;
@@ -20,8 +18,8 @@ class NotificationManager implements NotificationManagerInterface
     public function __construct(
         protected TemplateRendererInterface $renderer,
         protected NotificationTemplateResolver $templates,
-    ) {
-    }
+        protected CommunicationDeliveryService $delivery,
+    ) {}
 
     public function dispatch(string $eventKey, array $payload, array $options = []): array
     {
@@ -49,7 +47,7 @@ class NotificationManager implements NotificationManagerInterface
             'recipient_type' => $recipient['type'] ?? null,
             'recipient_id' => $recipient['id'] ?? null,
             'recipient_address' => $recipient['address'] ?? null,
-            'attempts' => 1,
+            'attempts' => 0,
             'idempotency_key' => (string) Str::uuid(),
             'payload' => $payload,
             'rendered_content' => $rendered,
@@ -79,38 +77,28 @@ class NotificationManager implements NotificationManagerInterface
             'communication_id' => $communication->id,
         ];
 
-        try {
-            $response = $this->resolveDriver($parsed['channel'])->send($parsed['channel'], $driverPayload);
-            $status = (string) ($response['status'] ?? 'sent');
+        if ($this->shouldQueue($parsed['channel'], $options)) {
+            $queue = $this->queueName($parsed['channel']);
 
             $communication->update([
-                'status' => $status,
+                'status' => 'queued',
                 'meta' => array_merge($communication->meta ?? [], [
-                    'channel_response' => $response,
+                    'queue' => [
+                        'name' => $queue,
+                        'published_at' => Carbon::now()->toISOString(),
+                    ],
                 ]),
-                'sent_at' => $status === 'sent' ? Carbon::now() : null,
-                'failed_at' => $status === 'failed' ? Carbon::now() : null,
-                'error_message' => $status === 'failed' ? (string) ($response['error'] ?? 'Channel failure.') : null,
-            ]);
-
-            if ($status === 'sent') {
-                event(new NotificationSent($communication->fresh(), $parsed['channel'], $response));
-            } else {
-                event(new NotificationFailed($communication->fresh(), $parsed['channel'], $response));
-            }
-        } catch (\Throwable $exception) {
-            $communication->update([
-                'status' => 'failed',
-                'failed_at' => Carbon::now(),
-                'error_message' => $exception->getMessage(),
             ]);
 
             $response = [
-                'status' => 'failed',
-                'error' => $exception->getMessage(),
+                'status' => 'queued',
+                'queue' => $queue,
             ];
 
-            event(new NotificationFailed($communication->fresh(), $parsed['channel'], $response));
+            SendCommunicationJob::dispatch($communication->id, $parsed['channel'], $driverPayload)
+                ->onQueue($queue);
+        } else {
+            $response = $this->delivery->send($communication, $parsed['channel'], $driverPayload);
         }
 
         $result = [
@@ -193,18 +181,23 @@ class NotificationManager implements NotificationManagerInterface
         };
     }
 
-    protected function resolveDriver(string $channel): ChannelDriverInterface
+    protected function shouldQueue(string $channel, array $options): bool
     {
-        $configuredDriver = config("communications.channels.{$channel}.driver");
-
-        if (is_string($configuredDriver) && class_exists($configuredDriver)) {
-            $driver = app($configuredDriver);
-
-            if ($driver instanceof ChannelDriverInterface) {
-                return $driver;
-            }
+        if (array_key_exists('queue', $options)) {
+            return (bool) $options['queue'];
         }
 
-        throw new InvalidArgumentException("Unsupported channel [{$channel}].");
+        return (bool) config("communications.channels.{$channel}.queue", false);
+    }
+
+    protected function queueName(string $channel): string
+    {
+        $configuredQueue = config("communications.channels.{$channel}.queue_name");
+
+        if (is_string($configuredQueue) && trim($configuredQueue) !== '') {
+            return $configuredQueue;
+        }
+
+        return "notifications.{$channel}";
     }
 }

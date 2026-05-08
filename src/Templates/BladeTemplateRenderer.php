@@ -8,13 +8,12 @@ use Illuminate\Support\Facades\Blade;
 
 class BladeTemplateRenderer implements TemplateRendererInterface
 {
-    public function __construct(protected ViewFactory $views)
-    {
-    }
+    public function __construct(protected ViewFactory $views) {}
 
     public function render(string $template, array $data = []): string
     {
         $template = $this->normalizeDotNotationTags($template);
+        $data = $this->normalizeData($data);
 
         if ($this->views->exists($template)) {
             return $this->views->make($template, $data)->render();
@@ -31,5 +30,25 @@ class BladeTemplateRenderer implements TemplateRendererInterface
 
             return '{{ $'.$root.'->'.implode('->', $segments).' }}';
         }, $template) ?? $template;
+    }
+
+    protected function normalizeData(array $data): array
+    {
+        return collect($data)
+            ->map(fn (mixed $value) => $this->normalizeValue($value))
+            ->all();
+    }
+
+    protected function normalizeValue(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $normalized = collect($value)
+            ->map(fn (mixed $nested) => $this->normalizeValue($nested))
+            ->all();
+
+        return array_is_list($normalized) ? $normalized : (object) $normalized;
     }
 }

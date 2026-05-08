@@ -184,7 +184,7 @@ channels = [mail, database]
 - [ ] Appeler `SmsChannel` pour les SMS
 - [ ] Appeler `DocumentGenerator` pour les documents
 - [ ] Gerer l'ordre d'execution si necessaire
-- [ ] Passer par des jobs si le canal doit etre asynchrone
+- [x] Passer par des jobs si le canal doit etre asynchrone
 
 ### 7. Gestion des documents
 

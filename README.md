@@ -98,6 +98,10 @@ return [
 ];
 ```
 
+Dans cet exemple, la cle `template` correspond a un fallback de demarrage.
+Elle permet au package de rendre un contenu minimal meme si aucun template n'a encore ete cree en base via l'UI/WYSIWYG.
+Quand l'equipe utilise le WYSIWYG du plugin, la source principale du contenu devient la table `communication_templates`.
+
 Exemple minimal de configuration mail dans le projet hote :
 
 ```env
@@ -134,6 +138,9 @@ return [
 ```
 
 Le package suppose que les `events.php` des modules du projet principal sont fusionnes automatiquement par l'application hote.
+
+La cle `template` dans `config/events.php` n'est donc pas le contenu "edite par le WYSIWYG".
+Elle sert surtout de fallback de configuration pour un premier envoi ou pour un fonctionnement sans template base.
 
 ## Synchronisation runtime
 
@@ -240,8 +247,13 @@ app(NotificationManagerInterface::class)->dispatch(
 3. parsing de la cle
 4. resolution du template
 5. rendu final
-6. envoi via le channel
-7. journalisation dans `communications`
+6. journalisation dans `communications`
+7. publication dans une queue si le channel est configure avec `queue => true`
+8. execution du driver par `SendCommunicationJob` ou envoi direct si la queue est desactivee
+
+Quand un canal est mis en queue, le package ne contacte pas le fournisseur email/SMS pendant l'appel initial.
+Il prepare le message, cree une ligne `communications` avec le statut `queued`, puis publie un job Laravel.
+Le worker du projet hote consomme ensuite la queue et appelle le driver reel.
 
 ## Validation du payload
 
@@ -272,24 +284,48 @@ Configuration actuelle :
 'channels' => [
     'email' => [
         'driver' => Acl\Communications\Channels\MailChannel::class,
+        'queue' => true,
+        'queue_name' => env('COMMUNICATIONS_EMAIL_QUEUE', 'notifications.email'),
     ],
     'sms' => [
         'driver' => Acl\Communications\Channels\NullChannel::class,
+        'queue' => false,
+        'queue_name' => env('COMMUNICATIONS_SMS_QUEUE', 'notifications.sms'),
     ],
     'in_app' => [
         'driver' => Acl\Communications\Channels\NullChannel::class,
+        'queue' => false,
+        'queue_name' => env('COMMUNICATIONS_IN_APP_QUEUE', 'notifications.in_app'),
     ],
 ],
+```
+
+Pour traiter les messages asynchrones, le projet hote lance un worker Laravel sur la queue configuree :
+
+```bash
+php artisan queue:work --queue=notifications.email
+```
+
+Un appel peut forcer le comportement synchrone ou asynchrone avec l'option `queue` :
+
+```php
+app(NotificationManagerInterface::class)->dispatch($eventKey, $payload, [
+    'queue' => false,
+]);
 ```
 
 ## Resolution de template
 
 La priorite de resolution est :
 1. override runtime via `options`
-2. template en base par `event_key` et `tenant_id`
+2. template en base par `event_key` et `tenant_id`, typiquement cree ou modifie via le WYSIWYG du plugin
 3. fallback config via `config('events')`
 
 Implementation : `src/Services/NotificationTemplateResolver.php`
+
+En pratique :
+- si un template existe en base, c'est lui qui est rendu
+- sinon, le package peut utiliser `config/events.php['template']` comme contenu de secours
 
 ## Integration par evenement applicatif
 

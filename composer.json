@@ -21,14 +21,14 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/",
-            "Acl\\Communications\\": "src/",
-            "Database\\Factories\\": "database/factories/",
-            "Database\\Seeders\\": "database/seeders/"
+            "Acl\\Communications\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/",
             "Tests\\": "tests/"
         }
     },

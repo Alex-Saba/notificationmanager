@@ -118,7 +118,7 @@ Transformer le module actuel en package Laravel reutilisable capable de gerer :
 
 ## Priorite 11 - Jobs, queue et resilience
 
-- [ ] Passer les envois lourds dans des jobs Laravel
+- [x] Passer les envois lourds dans des jobs Laravel
 - [ ] Ajouter retries et gestion d'echec
 - [x] Journaliser chaque tentative
 - [x] Ajouter fallback entre canaux

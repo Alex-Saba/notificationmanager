@@ -2,24 +2,26 @@
 
 namespace Tests\Unit;
 
-use App\Events\RequestCreated;
-use App\Models\User;
 use Acl\Communications\Contracts\ApplicationEventConsumerInterface;
 use Acl\Communications\Contracts\CommunicationServiceInterface;
 use Acl\Communications\Contracts\NotificationManagerInterface;
 use Acl\Communications\Contracts\TemplateRendererInterface;
 use Acl\Communications\Events\CommunicationOrchestrated;
 use Acl\Communications\Events\NotificationSent;
+use Acl\Communications\Jobs\SendCommunicationJob;
 use Acl\Communications\Listeners\NotificationListener;
 use Acl\Communications\Mail\CommunicationMail;
-use Acl\Communications\Models\Communication;
 use Acl\Communications\Models\CommunicationTemplate;
 use Acl\Communications\Models\NotificationEvent;
 use Acl\Communications\Services\NotificationTemplateResolver;
+use App\Events\RequestCreated;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class CommunicationServiceProviderTest extends TestCase
@@ -150,6 +152,54 @@ class CommunicationServiceProviderTest extends TestCase
         Event::assertDispatched(CommunicationOrchestrated::class);
     }
 
+    public function test_notification_manager_publishes_email_to_the_configured_queue(): void
+    {
+        Queue::fake();
+        Mail::fake();
+
+        $event = NotificationEvent::query()->create([
+            'key' => 'billing.payment-reminder.email',
+            'label' => 'Payment reminder email',
+            'payload_schema' => [
+                'name' => 'required|string',
+                'due_date' => 'required|date',
+                'user_email' => 'required|email',
+            ],
+            'is_active' => true,
+        ]);
+
+        CommunicationTemplate::query()->create([
+            'name' => 'Payment Reminder',
+            'key' => 'payment-reminder',
+            'event_key' => $event->key,
+            'channel' => 'email',
+            'subject' => 'Rappel de paiement',
+            'content' => '<p>Bonjour {{ $name }}</p>',
+            'active' => true,
+        ]);
+
+        $result = app(NotificationManagerInterface::class)->dispatch($event->key, [
+            'name' => 'Alex',
+            'due_date' => '2026-04-15',
+            'user_email' => 'alex@example.test',
+        ]);
+
+        $this->assertSame('queued', $result['status']);
+        $this->assertSame('queued', $result['response']['status']);
+        $this->assertSame('notifications.email', $result['response']['queue']);
+
+        $this->assertDatabaseHas('communications', [
+            'event_key' => $event->key,
+            'channel' => 'email',
+            'status' => 'queued',
+            'recipient_address' => 'alex@example.test',
+            'attempts' => 0,
+        ]);
+
+        Queue::assertPushedOn('notifications.email', SendCommunicationJob::class);
+        Mail::assertNothingSent();
+    }
+
     public function test_notification_manager_validates_payload_against_the_database_schema(): void
     {
         NotificationEvent::query()->create([
@@ -173,7 +223,7 @@ class CommunicationServiceProviderTest extends TestCase
             'active' => true,
         ]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
 
         app(NotificationManagerInterface::class)->dispatch('request.created.email', [
             'request_number' => 'REQ-001',
@@ -212,6 +262,23 @@ class CommunicationServiceProviderTest extends TestCase
 
         $this->assertSame('config', $config['source']);
         $this->assertSame('Nouvelle demande', $config['subject']);
+    }
+
+    public function test_template_renderer_supports_dot_notation_for_array_payloads(): void
+    {
+        $rendered = app(TemplateRendererInterface::class)->render(
+            'Bonjour {{ user.full_name }}, demande {{ request.reference }}.',
+            [
+                'user' => [
+                    'full_name' => 'Alex',
+                ],
+                'request' => [
+                    'reference' => 'REQ-001',
+                ],
+            ],
+        );
+
+        $this->assertSame('Bonjour Alex, demande REQ-001.', $rendered);
     }
 
     public function test_communication_service_can_trigger_the_notification_manager_from_an_application_event(): void
