@@ -1,41 +1,31 @@
 flowchart TD
-    A["Projet principal"] --> B["Event metier emis
-    ex: InvoicePaid, UserRegistered"]
+    A["Projet principal"] --> B["Event metier ou dispatch direct"]
 
-    B --> C["Le package recoit une event_key
-    ex: invoice.paid"]
+    B --> C["event_key
+    ex: request.created.email"]
 
-    C --> D["CommunicationService"]
+    C --> D["NotificationManager"]
 
-    D --> E["Recherche de configuration
-    par event_key"]
-    E --> F["Template associe"]
-    E --> G["Canaux actifs"]
-    E --> H["Regles metier
-    langue, priorite, fallback, delai"]
+    D --> E["notification_events
+    payload_schema"]
+    D --> F["NotificationTemplateResolver"]
 
-    F --> I["TemplateRenderer"]
-    I --> J["Contenu final"]
+    F --> G["Options runtime"]
+    F --> H["Template actif DB"]
+    F --> I["Fallback config/events"]
 
-    G --> K["MailChannel"]
-    G --> L["SmsChannel"]
-    G --> M["DatabaseNotificationChannel"]
-    G --> N["DocumentGenerator"]
+    G --> J["TemplateRenderer"]
+    H --> J
+    I --> J
 
-    J --> K
-    J --> L
-    J --> M
-    J --> N
+    J --> K["Contenu final"]
+    K --> L["communications log"]
 
-    N --> O["Document genere
-    PDF, DOCX..."]
+    L --> M{"Queue active ?"}
+    M -->|oui| N["SendCommunicationJob"]
+    M -->|non| O["CommunicationDeliveryService"]
+    N --> O
 
-    O --> K
-    O --> P["Stockage document"]
-
-    K --> Q["Envoi effectif"]
-    L --> Q
-    M --> Q
-    P --> Q
-
-    Q --> R["Logs / Historique / Statuts"]
+    O --> P["MailChannel / NullChannel"]
+    P --> Q["sent / failed"]
+    Q --> R["Events de sortie"]

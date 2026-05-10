@@ -2,19 +2,39 @@
 
 ## Objectif
 
-Definir le fonctionnement cible du package une fois appele par le projet principal.
+Definir le fonctionnement du package une fois appele par le projet principal.
+Ce document distingue l'etat actuel de la cible fonctionnelle plus large.
 
 Le package ne porte pas les evenements metier du projet principal.
 Le projet principal declenche un event metier ou appelle explicitement le package avec une `event_key`.
 
 ## Flux global
 
+Etat actuel :
+
 ```text
 Projet principal
 -> ApplicationEventConsumer
 -> EventCatalogLookup
 -> CommunicationService
--> RuleResolver
+-> NotificationManager
+-> NotificationEvent runtime
+-> NotificationTemplateResolver
+-> TemplateRenderer
+-> Channel driver
+-> Queue optionnelle
+-> Logs
+-> Events de sortie
+```
+
+Cible future avec regles multi-canaux :
+
+```text
+Projet principal
+-> ApplicationEventConsumer
+-> EventCatalogLookup
+-> CommunicationService
+-> Rules engine future
 -> Template
 -> TemplateRenderer
 -> ChannelResolver
@@ -28,7 +48,7 @@ Projet principal
 Le package doit distinguer clairement :
 
 - `incoming_event` : l'evenement entrant, son recipient et ses donnees
-- `resolved_rule` : la regle trouvee, le template retenu et les canaux resolves
+- `resolved_template` : le template retenu depuis les options, la base ou la config
 - `produced_rendering` : le rendu HTML produit et le document eventuel
 - `emitted_result` : le resultat emis, les deliveries, le fallback et le statut final
 
@@ -119,33 +139,30 @@ InvoicePaid
 -> CommunicationService::send(event_key, recipient, data)
 ```
 
-### 2. Resolution de la regle
+### 2. Resolution runtime actuelle
 
-- [ ] Chercher la regle active liee a la `event_key`
-- [ ] Verifier que la regle existe
-- [ ] Recuperer `template_id`
-- [ ] Recuperer `channels`
-- [ ] Recuperer `priority`
-- [ ] Recuperer `fallback`
-- [ ] Recuperer `delay`
+- [x] Chercher l'evenement actif dans `notification_events`
+- [x] Valider le payload avec `payload_schema`
+- [x] Parser le canal depuis le troisieme segment de `event_key`
+- [x] Resoudre le template actif par `event_key` et `tenant_id`
+- [x] Utiliser `config('events')[event_key]['template']` comme fallback
 
 Sortie attendue :
 
 ```text
-event_key = invoice.paid
+event_key = invoice.paid.email
 template_id = 12
-channels = [mail, database]
-priority = normal
-fallback = database
-delay = null
+channel = email
+priority = 100
+queue = notifications.email
 ```
 
 ### 3. Chargement du template
 
-- [ ] Charger le template associe a la regle
+- [x] Charger le template associe a la `event_key`
 - [ ] Charger la bonne variante de langue si necessaire
-- [ ] Verifier que le template est actif
-- [ ] Verifier que les champs requis existent : sujet, corps, type
+- [x] Verifier que le template est actif
+- [x] Verifier que les champs requis existent : sujet et contenu
 
 ### 4. Rendu du contenu
 
@@ -163,9 +180,9 @@ Bonjour Dupont, votre facture FAC-2026-001 a bien ete payee.
 
 ### 5. Resolution des canaux
 
-- [ ] Lire les canaux definis dans la regle
-- [ ] Verifier les canaux reellement utilisables
-- [ ] Exclure un canal si les prerequis sont absents
+- [x] Lire le canal depuis la cle `<module>.<action>.<channel>`
+- [x] Verifier que le driver du canal est configure
+- [x] Exclure un canal si les prerequis sont absents
   Exemple : pas d'email si aucune adresse email
 - [ ] Tenir compte des preferences utilisateur
 - [ ] Tenir compte de la priorite
@@ -174,7 +191,7 @@ Bonjour Dupont, votre facture FAC-2026-001 a bien ete payee.
 Sortie attendue :
 
 ```text
-channels = [mail, database]
+channel = mail
 ```
 
 ### 6. Execution des canaux
@@ -196,7 +213,7 @@ channels = [mail, database]
 ### 8. Fallback
 
 - [ ] Detecter l'echec d'un canal principal
-- [ ] Appliquer la strategie de fallback de la regle
+- [ ] Appliquer une strategie de fallback entre canaux
 - [ ] Rejouer l'envoi sur un autre canal si necessaire
 - [ ] Journaliser le fallback applique
 
@@ -236,12 +253,12 @@ email echec -> fallback database
 
 ### Package
 
-- Resout la regle
-- Charge le template
+- Resout l'evenement runtime
+- Charge le template actif ou le fallback config
 - Rend le contenu
-- Choisit les canaux
+- Choisit le canal depuis la cle d'evenement
 - Execute les envois
-- Gere fallback et logs
+- Gere queue, resultat et logs
 - Ne porte pas l'exposition finale a l'utilisateur
 
 ## Exposition a l'utilisateur final
@@ -285,6 +302,8 @@ Regle de separation recommandee :
 - [ ] `active`
 
 ### `communication_rules`
+
+Table conservee pour les evolutions de regles multi-canaux, mais non utilisee par le flux runtime principal actuel.
 
 - [ ] `id`
 - [ ] `event_key`
@@ -332,7 +351,10 @@ interface ChannelDriverInterface
 ## V1 recommandee
 
 - [ ] Trigger par `event_key`
-- [ ] 1 template + 1 regle associee
-- [ ] 2 canaux : `database` et `mail`
-- [ ] 1 historique des envois
-- [ ] 1 exemple d'integration avec un event du projet principal
+- [x] Catalogue runtime `notification_events`
+- [x] Template actif par `event_key`
+- [x] Canal derive de la cle d'evenement
+- [x] 1 historique des envois
+- [x] 1 exemple d'integration avec un event du projet principal
+- [ ] Vrai canal in-app
+- [ ] Regles multi-canaux et fallback avance

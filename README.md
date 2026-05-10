@@ -99,8 +99,8 @@ return [
 ```
 
 Dans cet exemple, la cle `template` correspond a un fallback de demarrage.
-Elle permet au package de rendre un contenu minimal meme si aucun template n'a encore ete cree en base via l'UI/WYSIWYG.
-Quand l'equipe utilise le WYSIWYG du plugin, la source principale du contenu devient la table `communication_templates`.
+Elle permet au package de rendre un contenu minimal meme si aucun template n'a encore ete cree en base.
+Si un template actif existe dans la table `communication_templates` pour la meme `event_key`, il devient prioritaire sur ce fallback de configuration.
 
 Exemple minimal de configuration mail dans le projet hote :
 
@@ -139,8 +139,7 @@ return [
 
 Le package suppose que les `events.php` des modules du projet principal sont fusionnes automatiquement par l'application hote.
 
-La cle `template` dans `config/events.php` n'est donc pas le contenu "edite par le WYSIWYG".
-Elle sert surtout de fallback de configuration pour un premier envoi ou pour un fonctionnement sans template base.
+La cle `template` dans `config/events.php` sert surtout de fallback de configuration pour un premier envoi ou pour un fonctionnement sans template base.
 
 ## Synchronisation runtime
 
@@ -318,7 +317,7 @@ app(NotificationManagerInterface::class)->dispatch($eventKey, $payload, [
 
 La priorite de resolution est :
 1. override runtime via `options`
-2. template en base par `event_key` et `tenant_id`, typiquement cree ou modifie via le WYSIWYG du plugin
+2. template actif en base par `event_key` et `tenant_id`
 3. fallback config via `config('events')`
 
 Implementation : `src/Services/NotificationTemplateResolver.php`
@@ -413,8 +412,7 @@ Puis verifier :
 ## UI optionnelle
 
 Le depot contient aussi une UI Vue de demonstration pour :
-- gerer les templates
-- gerer les regles liees
+- consulter les templates
 - visualiser des notifications in-app
 
 Dans un projet principal, cette UI est desactivee par defaut pour eviter les collisions de routes et de vues.
@@ -422,9 +420,20 @@ Il faut l'activer explicitement si elle est voulue.
 
 Routes UI par defaut :
 - `/communications/templates`
-- `/communications/templates/create`
-- `/communications/templates/{id}/edit`
 - `/communications/notifications`
+
+Routes API UI par defaut :
+- `GET /communications/api/templates`
+- `GET /communications/api/templates/{id}`
+- `GET /communications/api/notifications`
+- `POST /communications/api/notifications`
+- `GET /communications/api/notifications/{id}`
+- `PATCH /communications/api/notifications/{id}/read`
+- `PATCH /communications/api/notifications/{id}/unread`
+- `DELETE /communications/api/notifications/{id}`
+
+L'UI templates est volontairement en lecture seule dans l'etat actuel du package.
+La creation ou modification de templates doit etre faite par seed, migration, import ou code applicatif hote.
 
 Le prefixe et les middlewares sont configurables dans `config/communications.php`.
 

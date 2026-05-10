@@ -6,7 +6,7 @@ return [
 
     // Mode d'utilisation :
     // - le projet principal declare explicitement les entites et les proprietes disponibles
-    // - ajoutez une entree par entite a exposer dans les tags du WYSIWYG
+    // - ajoutez une entree par entite a exposer dans les tags disponibles pour les templates
     //
     // Exemple :
     // [
