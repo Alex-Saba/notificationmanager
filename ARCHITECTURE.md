@@ -318,11 +318,6 @@ interface CommunicationServiceInterface
     public function send(string $eventKey, mixed $recipient, array $data = []): array;
 }
 
-interface RuleResolverInterface
-{
-    public function findByEventKey(string $eventKey): mixed;
-}
-
 interface TemplateRendererInterface
 {
     public function render(mixed $template, array $data = []): array;

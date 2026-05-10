@@ -12,9 +12,7 @@ use Acl\Communications\Contracts\CommunicationReactionPolicyInterface;
 use Acl\Communications\Contracts\CommunicationResultConsumerInterface;
 use Acl\Communications\Contracts\CommunicationServiceInterface;
 use Acl\Communications\Contracts\NotificationManagerInterface;
-use Acl\Communications\Contracts\RuleResolverInterface;
 use Acl\Communications\Contracts\TemplateRendererInterface;
-use Acl\Communications\Contracts\TemplateRepositoryInterface;
 use Acl\Communications\Events\CommunicationOrchestrated;
 use Acl\Communications\Events\NotificationFailed;
 use Acl\Communications\Events\NotificationSent;
@@ -24,10 +22,6 @@ use Acl\Communications\Services\CommunicationDeliveryService;
 use Acl\Communications\Services\CommunicationResultConsumer;
 use Acl\Communications\Services\CommunicationService;
 use Acl\Communications\Services\ConfigApplicationEventCatalog;
-use Acl\Communications\Services\ConfigRuleResolver;
-use Acl\Communications\Services\ConfigTemplateRepository;
-use Acl\Communications\Services\DatabaseRuleResolver;
-use Acl\Communications\Services\DatabaseTemplateRepository;
 use Acl\Communications\Services\HostCommunicationExposureConsumer;
 use Acl\Communications\Services\HostOwnedReactionPolicy;
 use Acl\Communications\Services\LaravelApplicationEventConsumer;
@@ -54,10 +48,6 @@ class CommunicationServiceProvider extends ServiceProvider
         $this->app->singleton(CommunicationReactionPolicyInterface::class, HostOwnedReactionPolicy::class);
         $this->app->singleton(CommunicationResultConsumerInterface::class, CommunicationResultConsumer::class);
         $this->app->singleton(CommunicationExposureConsumerInterface::class, HostCommunicationExposureConsumer::class);
-        $this->app->singleton(ConfigRuleResolver::class, ConfigRuleResolver::class);
-        $this->app->singleton(ConfigTemplateRepository::class, ConfigTemplateRepository::class);
-        $this->app->singleton(RuleResolverInterface::class, DatabaseRuleResolver::class);
-        $this->app->singleton(TemplateRepositoryInterface::class, DatabaseTemplateRepository::class);
         $this->app->singleton(CommunicationServiceInterface::class, CommunicationService::class);
     }
 

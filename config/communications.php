@@ -40,16 +40,6 @@ return [
         ],
     ],
 
-    'templates' => [
-        'path' => resource_path('views/communications'),
-        'default_extension' => 'blade.php',
-        'catalog' => [
-            'user-welcome' => [
-                'view' => 'communications.user-welcome',
-            ],
-        ],
-    ],
-
     'events' => [
         'catalog' => [
             RequestCreated::class => [
