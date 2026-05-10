@@ -6,10 +6,10 @@
                     Communications templates
                 </p>
                 <h1 class="font-['Space_Grotesk'] text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
-                    Bibliotheque templates
+                    Bibliothèque templates
                 </h1>
                 <p class="mt-3 text-sm leading-6 text-slate-600 md:text-base">
-                    Consultez les templates actifs, leurs event keys et les regles associees.
+                    Consultez les templates actifs, leurs event keys et les règles associées.
                 </p>
             </div>
 
@@ -31,7 +31,7 @@
         <main class="grid flex-1 gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
             <aside class="rounded-[32px] border border-[#DCDBDA] bg-white p-5 shadow-[0_18px_48px_rgba(0,0,0,0.05)]">
                 <div class="mb-5">
-                    <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Bibliotheque</p>
+                    <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Bibliothèque</p>
                     <p class="mt-1 text-3xl font-semibold text-slate-950">{{ templates.length }}</p>
                     <p class="text-sm text-slate-600">templates disponibles</p>
                 </div>
@@ -95,7 +95,7 @@
                             <dd class="mt-2 text-sm font-semibold text-slate-900">{{ channelsLabel }}</dd>
                         </div>
                         <div class="rounded-2xl border border-[#DCDBDA] bg-[#fafafa] p-4">
-                            <dt class="text-xs uppercase tracking-[0.18em] text-slate-500">Priorite</dt>
+                            <dt class="text-xs uppercase tracking-[0.18em] text-slate-500">Priorité</dt>
                             <dd class="mt-2 text-sm font-semibold text-slate-900">{{ activeTemplate.rule.priority ?? '-' }}</dd>
                         </div>
                         <div class="rounded-2xl border border-[#DCDBDA] bg-[#fafafa] p-4">

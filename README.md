@@ -1,41 +1,41 @@
 # NotificationManager
 
-`acl/notification-manager` fournit un package Laravel de notifications, aligne sur une architecture `NotificationManager`.
+`acl/notification-manager` fournit un package Laravel de notifications, aligné sur une architecture `NotificationManager`.
 
 Le module permet de :
-- declencher une notification via une cle unique
+- déclencher une notification via une clé unique
 - valider dynamiquement le payload
-- router vers un channel a partir de la cle
-- resoudre un template par priorite `options -> DB -> config`
-- travailler sur un catalogue runtime centralise en base
-- rester agnostique des modules metier
+- router vers un channel à partir de la clé
+- résoudre un template par priorité `options -> DB -> config`
+- travailler sur un catalogue runtime centralisé en base
+- rester agnostique des modules métier
 
-## Structure du depot
+## Structure du dépôt
 
-Le coeur distribuable du package est porte par :
+Le cœur distribuable du package est porté par :
 - `src/`
 - `config/communications.php`
 - `database/migrations/communications`
 - `routes/communications-ui.php`
 
-Le depot contient aussi une application Laravel locale de demonstration pour developper et tester le package.
-Cette application n'est pas destinee a etre publiee comme partie du package Composer.
+Le dépôt contient aussi une application Laravel locale de démonstration pour développer et tester le package.
+Cette application n'est pas destinée à être publiée comme partie du package Composer.
 
 ## Objectif
 
 Le projet principal :
-- declare ses evenements dans ses modules via `config/events.php`
-- fusionne ces declarations dans `config('events')`
-- declenche les notifications par cle
+- déclare ses événements dans ses modules via `config/events.php`
+- fusionne ces déclarations dans `config('events')`
+- déclenche les notifications par clé
 
 Le package :
-- synchronise ces declarations vers la base
+- synchronise ces déclarations vers la base
 - utilise la table `notification_events` comme source runtime
 - valide le payload
-- resout le template
+- résout le template
 - envoie via le channel correspondant
 
-## Convention de cle
+## Convention de clé
 
 Format obligatoire :
 
@@ -60,24 +60,24 @@ php artisan migrate
 
 Le provider principal du package est `src/CommunicationServiceProvider.php`.
 
-## Procedure d'integration dans le projet principal
+## Procédure d'intégration dans le projet principal
 
-Ordre recommande :
+Ordre recommandé :
 1. installer le package avec Composer
 2. publier `config/communications.php`
 3. publier les migrations du package
-4. executer `php artisan migrate`
-5. declarer les `event_key` metier dans `config/events.php`
+4. exécuter `php artisan migrate`
+5. déclarer les `event_key` métier dans `config/events.php`
 6. synchroniser le catalogue runtime avec `php artisan notifications:sync`
 7. envoyer un premier message de test via `NotificationManagerInterface`
 
-Prerequis cote projet hote :
+Prérequis côté projet hôte :
 - Laravel 12
 - PHP 8.2 minimum
-- une configuration mail exploitable si le channel `email` est utilise
-- un fichier `config/events.php` ou un mecanisme equivalent qui alimente `config('events')`
+- une configuration mail exploitable si le channel `email` est utilisé
+- un fichier `config/events.php` ou un mécanisme équivalent qui alimente `config('events')`
 
-## Configuration minimale du projet hote
+## Configuration minimale du projet hôte
 
 Exemple minimal de `config/events.php` :
 
@@ -92,17 +92,17 @@ return [
             'requester_name' => 'required|string',
             'user_email' => 'required|email',
         ],
-        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistree.</p>',
+        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistrée.</p>',
         'subject' => 'Nouvelle demande',
     ],
 ];
 ```
 
-Dans cet exemple, la cle `template` correspond a un fallback de demarrage.
-Elle permet au package de rendre un contenu minimal meme si aucun template n'a encore ete cree en base.
-Si un template actif existe dans la table `communication_templates` pour la meme `event_key`, il devient prioritaire sur ce fallback de configuration.
+Dans cet exemple, la clé `template` correspond à un fallback de démarrage.
+Elle permet au package de rendre un contenu minimal même si aucun template n'a encore été créé en base.
+Si un template actif existe dans la table `communication_templates` pour la même `event_key`, il devient prioritaire sur ce fallback de configuration.
 
-Exemple minimal de configuration mail dans le projet hote :
+Exemple minimal de configuration mail dans le projet hôte :
 
 ```env
 MAIL_MAILER=smtp
@@ -115,12 +115,12 @@ MAIL_FROM_ADDRESS="no-reply@example.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-## Declaration des evenements
+## Déclaration des événements
 
-Les evenements ne sont pas declares dans le package comme source metier finale.
-Ils sont declares dans le projet principal, puis lus par le package via `config('events')`.
+Les événements ne sont pas déclares dans le package comme source métier finale.
+Ils sont déclares dans le projet principal, puis lus par le package via `config('events')`.
 
-Exemple de fichier hote `config/events.php` :
+Exemple de fichier hôte `config/events.php` :
 
 ```php
 return [
@@ -131,19 +131,19 @@ return [
             'requester_name' => 'required|string',
             'user_email' => 'required|email',
         ],
-        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistree.</p>',
+        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistrée.</p>',
         'subject' => 'Nouvelle demande',
     ],
 ];
 ```
 
-Le package suppose que les `events.php` des modules du projet principal sont fusionnes automatiquement par l'application hote.
+Le package suppose que les `events.php` des modules du projet principal sont fusionnés automatiquement par l'application hôte.
 
-La cle `template` dans `config/events.php` sert surtout de fallback de configuration pour un premier envoi ou pour un fonctionnement sans template base.
+La clé `template` dans `config/events.php` sert surtout de fallback de configuration pour un premier envoi ou pour un fonctionnement sans template base.
 
 ## Synchronisation runtime
 
-Le runtime des evenements est centralise dans la table `notification_events`.
+Le runtime des événements est centralisé dans la table `notification_events`.
 
 Commande de synchronisation :
 
@@ -151,11 +151,11 @@ Commande de synchronisation :
 php artisan notifications:sync
 ```
 
-Cette commande lit `config('events')` puis met a jour la table `notification_events`.
+Cette commande lit `config('events')` puis met à jour la table `notification_events`.
 
 ## Premier envoi manuel
 
-Une fois les evenements synchronises, un premier envoi peut etre teste directement :
+Une fois les événements synchronisés, un premier envoi peut être testé directement :
 
 ```php
 use Acl\Communications\Contracts\NotificationManagerInterface;
@@ -170,7 +170,7 @@ app(NotificationManagerInterface::class)->dispatch(
 );
 ```
 
-Sequence minimale de verification :
+Séquence minimale de vérification :
 
 ```bash
 php artisan notifications:sync
@@ -203,7 +203,7 @@ Champs principaux :
 
 ### Table `communication_templates`
 
-Le package utilise la table des templates pour la resolution runtime :
+Le package utilise la table des templates pour la résolution runtime :
 - `event_key`
 - `tenant_id`
 - `subject`
@@ -238,25 +238,25 @@ app(NotificationManagerInterface::class)->dispatch(
 );
 ```
 
-## Flow d'execution
+## Flow d'exécution
 
 `dispatch()` fait :
-1. lecture de l'evenement dans `notification_events`
+1. lecture de l'événement dans `notification_events`
 2. validation du payload via `payload_schema`
-3. parsing de la cle
-4. resolution du template
+3. parsing de la clé
+4. résolution du template
 5. rendu final
 6. journalisation dans `communications`
-7. publication dans une queue si le channel est configure avec `queue => true`
-8. execution du driver par `SendCommunicationJob` ou envoi direct si la queue est desactivee
+7. publication dans une queue si le channel est configuré avec `queue => true`
+8. exécution du driver par `SendCommunicationJob` ou envoi direct si la queue est désactivée
 
 Quand un canal est mis en queue, le package ne contacte pas le fournisseur email/SMS pendant l'appel initial.
-Il prepare le message, cree une ligne `communications` avec le statut `queued`, puis publie un job Laravel.
-Le worker du projet hote consomme ensuite la queue et appelle le driver reel.
+Il prépare le message, crée une ligne `communications` avec le statut `queued`, puis publie un job Laravel.
+Le worker du projet hôte consomme ensuite la queue et appelle le driver réel.
 
 ## Validation du payload
 
-Le payload est valide dynamiquement a partir du schema stocke dans `notification_events.payload_schema`.
+Le payload est validé dynamiquement à partir du schéma stocké dans `notification_events.payload_schema`.
 
 Exemple :
 
@@ -269,13 +269,13 @@ Exemple :
 
 ## Routing channel
 
-Le channel est derive du troisieme segment de la cle.
+Le channel est dérivé du troisième segment de la clé.
 
 Exemple :
 - `request.created.email` -> channel `email`
 - `billing.reminder.in_app` -> channel `in_app`
 
-Le manager route ensuite vers le driver declare dans `config/communications.php`.
+Le manager route ensuite vers le driver déclare dans `config/communications.php`.
 
 Configuration actuelle :
 
@@ -299,13 +299,13 @@ Configuration actuelle :
 ],
 ```
 
-Pour traiter les messages asynchrones, le projet hote lance un worker Laravel sur la queue configuree :
+Pour traiter les messages asynchrones, le projet hôte lance un worker Laravel sur la queue configurée :
 
 ```bash
 php artisan queue:work --queue=notifications.email
 ```
 
-Un appel peut forcer le comportement synchrone ou asynchrone avec l'option `queue` :
+Un appel peut forcer le comportément synchrone ou asynchrone avec l'option `queue` :
 
 ```php
 app(NotificationManagerInterface::class)->dispatch($eventKey, $payload, [
@@ -313,9 +313,9 @@ app(NotificationManagerInterface::class)->dispatch($eventKey, $payload, [
 ]);
 ```
 
-## Resolution de template
+## Résolution de template
 
-La priorite de resolution est :
+La priorité de résolution est :
 1. override runtime via `options`
 2. template actif en base par `event_key` et `tenant_id`
 3. fallback config via `config('events')`
@@ -326,18 +326,18 @@ En pratique :
 - si un template existe en base, c'est lui qui est rendu
 - sinon, le package peut utiliser `config/events.php['template']` comme contenu de secours
 
-## Integration par evenement applicatif
+## Intégration par événement applicatif
 
-Le package supporte aussi un pont depuis un event Laravel du projet principal.
+Le package supporté aussi un pont depuis un event Laravel du projet principal.
 
-Exemple d'evenement hote local : `app/Events/RequestCreated.php`
+Exemple d'événement hôte local : `app/Événements/RequestCreated.php`
 
-Exemple minimal d'evenement hote :
+Exemple minimal d'événement hôte :
 
 ```php
 <?php
 
-namespace App\Events;
+namespace App\Événements;
 
 use Acl\Communications\Contracts\CommunicationEventInterface;
 
@@ -378,11 +378,11 @@ class RequestCreated implements CommunicationEventInterface
 }
 ```
 
-Enregistrement du listener dans le projet hote :
+Enregistrement du listener dans le projet hôte :
 
 ```php
 use Acl\Communications\Listeners\NotificationListener;
-use App\Events\RequestCreated;
+use App\Événements\RequestCreated;
 use Illuminate\Support\Facades\Event;
 
 Event::listen(RequestCreated::class, NotificationListener::class);
@@ -390,8 +390,8 @@ event(new RequestCreated('REQ-2026-001', 'Alex', 'alex@example.test', 42));
 ```
 
 Dans ce cas :
-- l'event applicatif fournit la cle et le payload
-- `src/Services/CommunicationService.php` delegue ensuite a `NotificationManagerInterface`
+- l'event applicatif fournit la clé et le payload
+- `src/Services/CommunicationService.php` délègue ensuite à `NotificationManagerInterface`
 
 ## Checklist d'installation rapide
 
@@ -403,26 +403,26 @@ php artisan migrate
 php artisan notifications:sync
 ```
 
-Puis verifier :
-- la table `notification_events` contient les cles attendues
-- la configuration mail du projet hote est correcte
-- un appel a `NotificationManagerInterface::dispatch()` cree une ligne dans `communications`
-- le channel attendu est bien configure dans `config/communications.php`
+Puis vérifier :
+- la table `notification_events` contient les clés attendues
+- la configuration mail du projet hôte est correcte
+- un appel à `NotificationManagerInterface::dispatch()` crée une ligne dans `communications`
+- le channel attendu est bien configuré dans `config/communications.php`
 
 ## UI optionnelle
 
-Le depot contient aussi une UI Vue de demonstration pour :
+Le dépôt contient aussi une UI Vue de démonstration pour :
 - consulter les templates
 - visualiser des notifications in-app
 
-Dans un projet principal, cette UI est desactivee par defaut pour eviter les collisions de routes et de vues.
+Dans un projet principal, cette UI est désactivée par défaut pour éviter les collisions de routes et de vues.
 Il faut l'activer explicitement si elle est voulue.
 
-Routes UI par defaut :
+Routes UI par défaut :
 - `/communications/templates`
 - `/communications/notifications`
 
-Routes API UI par defaut :
+Routes API UI par défaut :
 - `GET /communications/api/templates`
 - `GET /communications/api/templates/{id}`
 - `GET /communications/api/notifications`
@@ -432,12 +432,12 @@ Routes API UI par defaut :
 - `PATCH /communications/api/notifications/{id}/unread`
 - `DELETE /communications/api/notifications/{id}`
 
-L'UI templates est volontairement en lecture seule dans l'etat actuel du package.
-La creation ou modification de templates doit etre faite par seed, migration, import ou code applicatif hote.
+L'UI templates est volontairement en lecture seule dans l'état actuel du package.
+La création ou modification de templates doit être faite par seed, migration, import ou code applicatif hôte.
 
-Le prefixe et les middlewares sont configurables dans `config/communications.php`.
+Le préfixe et les middlewares sont configurables dans `config/communications.php`.
 
-Activation explicite dans le projet hote :
+Activation explicite dans le projet hôte :
 
 ```env
 COMMUNICATIONS_UI_ENABLED=true
@@ -453,7 +453,7 @@ Synchroniser le catalogue runtime :
 php artisan notifications:sync
 ```
 
-Preparer des donnees de demonstration et declencher un envoi :
+Préparer des données de démonstration et déclencher un envoi :
 
 ```bash
 php artisan communications:test-send
@@ -467,7 +467,7 @@ php artisan test
 npm run build
 ```
 
-Dans ce depot, ces commandes valident l'application locale de demonstration qui sert de banc d'integration pour le package.
+Dans ce dépôt, ces commandes valident l'application locale de démonstration qui sert de banc d'intégration pour le package.
 
 ## Fichiers importants
 
@@ -475,7 +475,7 @@ Dans ce depot, ces commandes valident l'application locale de demonstration qui 
 - `src/Services/NotificationManager.php`
 - `src/Services/NotificationTemplateResolver.php`
 - `src/Models/NotificationEvent.php`
-- `src/Console/Commands/SyncNotificationEventsCommand.php`
+- `src/Console/Commands/SyncNotificationÉvénementsCommand.php`
 - `src/Services/CommunicationService.php`
 - `src/CommunicationServiceProvider.php`
 - `config/communications.php`

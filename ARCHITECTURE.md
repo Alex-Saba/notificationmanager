@@ -2,11 +2,11 @@
 
 ## Objectif
 
-Definir le fonctionnement du package une fois appele par le projet principal.
-Ce document distingue l'etat actuel de la cible fonctionnelle plus large.
+Définir le fonctionnement du package une fois appelé par le projet principal.
+Ce document distingue l'état actuel de la cible fonctionnelle plus large.
 
-Le package ne porte pas les evenements metier du projet principal.
-Le projet principal declenche un event metier ou appelle explicitement le package avec une `event_key`.
+Le package ne porte pas les événements métier du projet principal.
+Le projet principal déclenche un event métier ou appelle explicitement le package avec une `event_key`.
 
 ## Flux global
 
@@ -24,10 +24,10 @@ Projet principal
 -> Channel driver
 -> Queue optionnelle
 -> Logs
--> Events de sortie
+-> Événements de sortie
 ```
 
-Cible future avec regles multi-canaux :
+Cible future avec règles multi-canaux :
 
 ```text
 Projet principal
@@ -43,55 +43,55 @@ Projet principal
 -> Logs
 ```
 
-## Etapes explicites
+## Étapes explicites
 
 Le package doit distinguer clairement :
 
-- `incoming_event` : l'evenement entrant, son recipient et ses donnees
+- `incoming_event` : l'événement entrant, son recipient et ses données
 - `resolved_template` : le template retenu depuis les options, la base ou la config
-- `produced_rendering` : le rendu HTML produit et le document eventuel
-- `emitted_result` : le resultat emis, les deliveries, le fallback et le statut final
+- `produced_rendering` : le rendu HTML produit et le document éventuel
+- `emitted_result` : le résultat émis, les deliveries, le fallback et le statut final
 
-Structure de resultat normalisee :
+Structure de résultat normalisée :
 
 - `event_id` : identifiant unique du traitement
-- `context` : informations d'entree et de resolution
-- `payload` : rendu produit et resultat emis
+- `context` : informations d'entrée et de résolution
+- `payload` : rendu produit et résultat émis
 
-Evenements de sortie attendus :
+Événements de sortie attendus :
 
 - `notification.sent.mail`
 - `notification.failed.mail`
 - `notification.document.generated`
 - `communication.orchestrated`
 
-Separation plus stricte entre orchestration et exposition :
+Séparation plus stricte entre orchestration et exposition :
 
-- `CommunicationService` orchestre uniquement la resolution, le rendu, l'envoi et les logs
-- l'evenement `communication.orchestrated` materialise la fin de cette orchestration
-- une couche `CommunicationExposureConsumer` consomme cet evenement pour preparer l'exposition cote application hote
-- l'application hote reste responsable de l'affichage, du telechargement ou de la publication finale
+- `CommunicationService` orchestre uniquement la résolution, le rendu, l'envoi et les logs
+- l'événement `communication.orchestrated` matérialise la fin de cette orchestration
+- une couche `CommunicationExposureConsumer` consomme cet événement pour préparer l'exposition côté application hôte
+- l'application hôte reste responsable de l'affichage, du téléchargement ou de la publication finale
 
-## Politique de reaction au resultat
+## Politique de réaction au résultat
 
-Convention recommandee :
+Convention recommandée :
 
-- le package emet les evenements de sortie
-- une couche `CommunicationResultConsumer` consomme ces evenements
-- la politique par defaut considere que la reaction finale appartient a l'application hote
+- le package émet les événements de sortie
+- une couche `CommunicationResultConsumer` consomme ces événements
+- la politique par défaut considère que la réaction finale appartient à l'application hôte
 
 En pratique :
 
-- le package produit, journalise et emet
-- l'application hote decide ensuite d'afficher, archiver, telecharger, notifier un back-office ou declencher une action metier
+- le package produit, journalise et émet
+- l'application hôte décide ensuite d'afficher, archiver, télécharger, notifier un back-office ou déclencher une action métier
 
-## Convention de nommage des evenements
+## Convention de nommage des événements
 
-Convention recommandee :
+Convention recommandée :
 
-- les evenements applicatifs utilisent le format `domaine.action`
+- les événements applicatifs utilisent le format `domaine.action`
 - une variante de canal peut utiliser `domaine.action.canal`
-- les evenements de sortie du package utilisent `notification.<statut>.<canal>`
+- les événements de sortie du package utilisent `notification.<statut>.<canal>`
 
 Exemples :
 
@@ -101,23 +101,23 @@ Exemples :
 - `notification.failed.mail`
 - `notification.document.generated`
 
-Regles de nommage :
+Règles de nommage :
 
 - utiliser uniquement des minuscules
-- separer les segments par des points
-- garder un verbe d'action stable en fin de cle metier
-- reserver le prefixe `notification.` aux evenements emis par le package
-- reserver les prefixes metier comme `request.`, `invoice.`, `user.` aux evenements entrants du projet principal
+- séparer les segments par des points
+- garder un verbe d'action stable en fin de clé métier
+- réserver le préfixe `notification.` aux événements émis par le package
+- réserver les préfixes métier comme `request.`, `invoice.`, `user.` aux événements entrants du projet principal
 
-## Checklist operationnelle
+## Checklist opérationnelle
 
-### 1. Reception de la demande
+### 1. Réception de la demande
 
 - [ ] Recevoir une `event_key`
 - [ ] Recevoir le `recipient`
-- [ ] Recevoir les `data` metier
-- [ ] Recevoir le contexte optionnel : langue, priorite forcee, canal force, delai
-- [ ] Resoudre l'evenement applicatif via un catalogue explicite
+- [ ] Recevoir les `data` métier
+- [ ] Recevoir le contexte optionnel : langue, priorité forcée, canal forcé, délai
+- [ ] Résoudre l'événement applicatif via un catalogue explicite
 
 Exemple :
 
@@ -139,12 +139,12 @@ InvoicePaid
 -> CommunicationService::send(event_key, recipient, data)
 ```
 
-### 2. Resolution runtime actuelle
+### 2. Résolution runtime actuelle
 
-- [x] Chercher l'evenement actif dans `notification_events`
+- [x] Chercher l'événement actif dans `notification_events`
 - [x] Valider le payload avec `payload_schema`
-- [x] Parser le canal depuis le troisieme segment de `event_key`
-- [x] Resoudre le template actif par `event_key` et `tenant_id`
+- [x] Parser le canal depuis le troisième segment de `event_key`
+- [x] Résoudre le template actif par `event_key` et `tenant_id`
 - [x] Utiliser `config('events')[event_key]['template']` comme fallback
 
 Sortie attendue :
@@ -159,34 +159,34 @@ queue = notifications.email
 
 ### 3. Chargement du template
 
-- [x] Charger le template associe a la `event_key`
-- [ ] Charger la bonne variante de langue si necessaire
-- [x] Verifier que le template est actif
-- [x] Verifier que les champs requis existent : sujet et contenu
+- [x] Charger le template associé à la `event_key`
+- [ ] Charger la bonne variante de langue si nécessaire
+- [x] Vérifier que le template est actif
+- [x] Vérifier que les champs requis existent : sujet et contenu
 
 ### 4. Rendu du contenu
 
-- [ ] Injecter les variables metier dans le template
-- [ ] Generer le sujet final
-- [ ] Generer le corps final
-- [ ] Generer les meta donnees necessaires selon le canal
-- [ ] Verifier les variables manquantes
+- [ ] Injecter les variables métier dans le template
+- [ ] Générer le sujet final
+- [ ] Générer le corps final
+- [ ] Générer les meta données nécessaires selon le canal
+- [ ] Vérifier les variables manquantes
 
 Exemple :
 
 ```text
-Bonjour Dupont, votre facture FAC-2026-001 a bien ete payee.
+Bonjour Dupont, votre facture FAC-2026-001 a bien été payée.
 ```
 
-### 5. Resolution des canaux
+### 5. Résolution des canaux
 
-- [x] Lire le canal depuis la cle `<module>.<action>.<channel>`
-- [x] Verifier que le driver du canal est configure
-- [x] Exclure un canal si les prerequis sont absents
+- [x] Lire le canal depuis la clé `<module>.<action>.<channel>`
+- [x] Vérifier que le driver du canal est configuré
+- [x] Exclure un canal si les prérequis sont absents
   Exemple : pas d'email si aucune adresse email
-- [ ] Tenir compte des preferences utilisateur
-- [ ] Tenir compte de la priorite
-- [ ] Tenir compte du delai ou de l'envoi differe
+- [ ] Tenir compte des préférences utilisateur
+- [ ] Tenir compte de la priorité
+- [ ] Tenir compte du délai ou de l'envoi différé
 
 Sortie attendue :
 
@@ -194,99 +194,99 @@ Sortie attendue :
 channel = mail
 ```
 
-### 6. Execution des canaux
+### 6. Exécution des canaux
 
 - [ ] Appeler `DatabaseNotificationChannel` pour les notifications in-app
 - [ ] Appeler `MailChannel` pour les emails
 - [ ] Appeler `SmsChannel` pour les SMS
 - [ ] Appeler `DocumentGenerator` pour les documents
-- [ ] Gerer l'ordre d'execution si necessaire
-- [x] Passer par des jobs si le canal doit etre asynchrone
+- [ ] Gérer l'ordre d'exécution si nécessaire
+- [x] Passer par des jobs si le canal doit être asynchrone
 
 ### 7. Gestion des documents
 
-- [ ] Generer un document si le canal `document` est actif
-- [ ] Sauvegarder le document sur le stockage configure
-- [ ] Retourner la reference du document genere
-- [ ] Permettre de joindre le document a un email si besoin
+- [ ] Générer un document si le canal `document` est actif
+- [ ] Sauvegarder le document sur le stockage configuré
+- [ ] Retourner la référence du document généré
+- [ ] Permettre de joindre le document à un email si besoin
 
 ### 8. Fallback
 
-- [ ] Detecter l'echec d'un canal principal
-- [ ] Appliquer une strategie de fallback entre canaux
-- [ ] Rejouer l'envoi sur un autre canal si necessaire
-- [ ] Journaliser le fallback applique
+- [ ] Détecter l'échec d'un canal principal
+- [ ] Appliquer une stratégie de fallback entre canaux
+- [ ] Rejouer l'envoi sur un autre canal si nécessaire
+- [ ] Journaliser le fallback appliqué
 
 Exemple :
 
 ```text
-sms echec -> fallback email
-email echec -> fallback database
+sms échec -> fallback email
+email échec -> fallback database
 ```
 
 ### 9. Logs et historique
 
 - [ ] Enregistrer chaque tentative d'envoi
-- [ ] Enregistrer le canal utilise
+- [ ] Enregistrer le canal utilisé
 - [ ] Enregistrer le statut : `pending`, `sent`, `failed`, `read`
 - [ ] Enregistrer les erreurs fournisseur
 - [ ] Enregistrer les identifiants externes si disponibles
-- [ ] Enregistrer les documents generes
+- [ ] Enregistrer les documents générés
 
 ### 10. Retour final
 
-- [ ] Retourner un resultat unifie
+- [ ] Retourner un résultat unifié
 - [ ] Exposer les canaux executes
-- [ ] Exposer les succes
-- [ ] Exposer les echecs
-- [ ] Exposer les fallbacks appliques
+- [ ] Exposer les succès
+- [ ] Exposer les échecs
+- [ ] Exposer les fallbacks appliqués
 
-## Responsabilites
+## Responsabilités
 
 ### Projet principal
 
-- Porte les evenements metier
-- Declenche un event Laravel ou appelle le package
-- Fournit `event_key`, destinataire et donnees
-- Expose toujours le resultat final a l'utilisateur
-- Decide comment afficher, rattacher, telecharger, archiver ou distribuer le rendu produit par le package
+- Porte les événements métier
+- Declénche un event Laravel ou appelle le package
+- Fournit `event_key`, destinataire et données
+- Expose toujours le résultat final à l'utilisateur
+- Décide comment afficher, rattacher, télécharger, archiver ou distribuer le rendu produit par le package
 
 ### Package
 
-- Resout l'evenement runtime
+- Résout l'événement runtime
 - Charge le template actif ou le fallback config
 - Rend le contenu
-- Choisit le canal depuis la cle d'evenement
-- Execute les envois
-- Gere queue, resultat et logs
-- Ne porte pas l'exposition finale a l'utilisateur
+- Choisit le canal depuis la clé d'événement
+- Exécute les envois
+- Gere queue, résultat et logs
+- Ne porte pas l'exposition finale à l'utilisateur
 
-## Exposition a l'utilisateur final
+## Exposition à l'utilisateur final
 
 Principe recommande :
 
-- Le package produit un rendu, un resultat de canal ou un document
+- Le package produit un rendu, un résultat de canal ou un document
 - Le package peut stocker techniquement ses sorties
-- Le projet principal reste toujours responsable de l'exposition finale a l'utilisateur
+- Le projet principal reste toujours responsable de l'exposition finale à l'utilisateur
 
 Cela permet de garder :
 
-- un package reutilisable
-- une UX geree par le projet principal
-- un meilleur controle sur la securite, le stockage et les permissions
+- un package réutilisable
+- une UX gérée par le projet principal
+- un meilleur contrôle sur la sécurité, le stockage et les permissions
 
 ## Tableau des canaux
 
-| Canal | Qui rend le contenu | Qui expose a l'utilisateur final | Qui stocke |
+| Canal | Qui rend le contenu | Qui expose à l'utilisateur final | Qui stocke |
 |---|---|---|---|
 | `mail` | Le package via `TemplateRenderer` | Le projet principal | Le package, le projet principal ou le provider email selon l'implementation |
-| `document` | Le package via `TemplateRenderer` + `DocumentGenerator` | Le projet principal | Le package ou le stockage configure par le projet principal |
-| `database` / `in-app` | Le package via `TemplateRenderer` | Le projet principal | Le package ou la base de donnees du projet principal |
+| `document` | Le package via `TemplateRenderer` + `DocumentGenerator` | Le projet principal | Le package ou le stockage configuré par le projet principal |
+| `database` / `in-app` | Le package via `TemplateRenderer` | Le projet principal | Le package ou la base de données du projet principal |
 
-Regle de separation recommandee :
+Règle de séparation recommandée :
 
 - Le package peut stocker les sorties techniques
-- Le projet principal garde la responsabilite de l'acces, de l'affichage et de l'usage fonctionnel
+- Le projet principal garde la responsabilité de l'accès, de l'affichage et de l'usage fonctionnel
 
 ## Tables cibles
 
@@ -303,7 +303,7 @@ Regle de separation recommandee :
 
 ### `communication_rules`
 
-Table conservee pour les evolutions de regles multi-canaux, mais non utilisee par le flux runtime principal actuel.
+Table conservée pour les évolutions de règles multi-canaux, mais non utilisée par le flux runtime principal actuel.
 
 - [ ] `id`
 - [ ] `event_key`
@@ -348,13 +348,13 @@ interface ChannelDriverInterface
 }
 ```
 
-## V1 recommandee
+## V1 recommandée
 
 - [ ] Trigger par `event_key`
 - [x] Catalogue runtime `notification_events`
 - [x] Template actif par `event_key`
-- [x] Canal derive de la cle d'evenement
+- [x] Canal dérivé de la clé d'événement
 - [x] 1 historique des envois
-- [x] 1 exemple d'integration avec un event du projet principal
+- [x] 1 exemple d'intégration avec un event du projet principal
 - [ ] Vrai canal in-app
-- [ ] Regles multi-canaux et fallback avance
+- [ ] Règles multi-canaux et fallback avancé

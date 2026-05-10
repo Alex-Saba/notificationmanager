@@ -6,10 +6,10 @@
                     Notifications in-app
                 </p>
                 <h1 class="font-['Space_Grotesk'] text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
-                    Demo notifications
+                    Démo notifications
                 </h1>
                 <p class="mt-3 text-sm leading-6 text-slate-600 md:text-base">
-                    Creez des notifications de demonstration, filtrez-les par type, date ou statut de lecture, puis testez le marquage lu / non lu.
+                    Créez des notifications de démonstration, filtrez-les par type, date ou statut de lecture, puis testez le marquage lu / non lu.
                 </p>
             </div>
 
@@ -122,7 +122,7 @@
                                 type="checkbox"
                                 class="h-4 w-4 rounded border-[#DCDBDA] text-slate-700"
                             >
-                            <span>Creer directement comme lue</span>
+                            <span>Créer directement comme lue</span>
                         </label>
 
                         <button
@@ -130,7 +130,7 @@
                             class="inline-flex w-full items-center justify-center rounded-2xl bg-[#DCDBDA] px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-[#d2d1d0] disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="isSubmitting"
                         >
-                            {{ isSubmitting ? 'Creation...' : 'Creer la notification' }}
+                            {{ isSubmitting ? 'Création...' : 'Créer la notification' }}
                         </button>
                     </form>
                 </section>
@@ -275,7 +275,7 @@
                                 <div class="mt-3 space-y-2 text-sm text-slate-700">
                                     <p><span class="font-semibold">Destinataire :</span> {{ selectedNotification.recipient_address || 'Non renseigne' }}</p>
                                     <p><span class="font-semibold">Type cible :</span> {{ selectedNotification.recipient_type || 'Non renseigne' }}</p>
-                                    <p><span class="font-semibold">Creation :</span> {{ formatDate(selectedNotification.created_at) }}</p>
+                                    <p><span class="font-semibold">Création :</span> {{ formatDate(selectedNotification.created_at) }}</p>
                                     <p><span class="font-semibold">Lecture :</span> {{ selectedNotification.read_at ? formatDate(selectedNotification.read_at) : 'Non lue' }}</p>
                                 </div>
                             </div>
@@ -384,7 +384,7 @@ async function createNotification() {
             return;
         }
 
-        globalError.value = 'La creation de la notification a echoue.';
+        globalError.value = 'La création de la notification a échoué.';
     } finally {
         isSubmitting.value = false;
     }

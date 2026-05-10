@@ -1,5 +1,5 @@
 flowchart TD
-    A["Projet principal"] --> B["Event metier ou dispatch direct"]
+    A["Projet principal"] --> B["Événement métier ou dispatch direct"]
 
     B --> C["event_key
     ex: request.created.email"]
@@ -28,4 +28,4 @@ flowchart TD
 
     O --> P["MailChannel / NullChannel"]
     P --> Q["sent / failed"]
-    Q --> R["Events de sortie"]
+    Q --> R["Événements de sortie"]

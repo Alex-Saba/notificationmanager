@@ -1,12 +1,12 @@
 # Diagrammes - ACL Communications
 
-Ce document decrit le flux actuel du package `acl/notification-manager`.
+Ce document décrit le flux actuel du package `acl/notification-manager`.
 
 ## 1. Vue D'ensemble
 
 ```mermaid
 flowchart TD
-    A["Projet principal"] --> B["Event applicatif ou dispatch direct"]
+    A["Projet principal"] --> B["Événement applicatif ou dispatch direct"]
     B --> C["CommunicationService / NotificationManager"]
     C --> D["notification_events"]
     C --> E["NotificationTemplateResolver"]
@@ -24,13 +24,13 @@ flowchart TD
     C --> P["CommunicationOrchestrated"]
 ```
 
-## 2. Sequence De Traitement
+## 2. Séquence De Traitement
 
 ```mermaid
 sequenceDiagram
     participant Host as Projet principal
     participant Manager as NotificationManager
-    participant Events as notification_events
+    participant Événements as notification_events
     participant Templates as NotificationTemplateResolver
     participant Renderer as TemplateRenderer
     participant Log as communications
@@ -39,8 +39,8 @@ sequenceDiagram
     participant Channel as Channel driver
 
     Host->>Manager: dispatch(event_key, payload, options)
-    Manager->>Events: find active event_key
-    Events-->>Manager: payload_schema
+    Manager->>Événements: find active event_key
+    Événements-->>Manager: payload_schema
     Manager->>Manager: validate payload + parse channel
     Manager->>Templates: resolve(event_key, options, tenant_id)
     Templates-->>Manager: template content + subject
@@ -64,13 +64,13 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A["event_key + payload"] --> B["Validation runtime"]
-    B --> C["Resolution template"]
+    B --> C["Résolution template"]
     C --> D["Rendu HTML"]
-    D --> E["Creation communication"]
+    D --> E["Création communication"]
     E --> F["Queue ou envoi direct"]
     F --> G["Driver canal"]
-    G --> H["Mise a jour status"]
-    H --> I["Events de sortie"]
+    G --> H["Mise à jour status"]
+    H --> I["Événements de sortie"]
 ```
 
 ## 4. Canal Mail
@@ -94,17 +94,17 @@ flowchart TD
     B --> C["/communications/templates"]
     B --> D["/communications/notifications"]
     C --> E["GET api/templates"]
-    D --> F["API notifications demo"]
+    D --> F["API notifications démo"]
     E --> G["Vue TemplatesApp lecture seule"]
     F --> H["Vue NotificationsDemoApp"]
 ```
 
-## 6. Separation Des Responsabilites
+## 6. Séparation Des Responsabilités
 
 ```mermaid
 flowchart LR
     subgraph Host["Projet principal"]
-        A["Events metier"]
+        A["Événements métier"]
         B["config events"]
         C["Templates seed/import si besoin"]
         D["Exposition finale utilisateur"]
@@ -112,7 +112,7 @@ flowchart LR
 
     subgraph Package["Package communications"]
         E["Catalogue runtime"]
-        F["Resolution template"]
+        F["Résolution template"]
         G["Rendering"]
         H["Drivers"]
         I["Logs techniques"]
@@ -128,7 +128,7 @@ flowchart LR
     I --> D
 ```
 
-## 7. Modele De Donnees Simplifie
+## 7. Modèle De Données Simplifié
 
 ```mermaid
 erDiagram
