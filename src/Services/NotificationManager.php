@@ -51,11 +51,14 @@ class NotificationManager implements NotificationManagerInterface
             'idempotency_key' => (string) Str::uuid(),
             'payload' => $payload,
             'rendered_content' => $rendered,
-            'meta' => [
+            'meta' => array_filter([
                 'options' => $options,
                 'parsed_event_key' => $parsed,
                 'template_source' => $template['source'] ?? null,
-            ],
+                'title' => $parsed['channel'] === 'in_app' ? ($template['subject'] ?? $template['name'] ?? null) : null,
+                'message' => $parsed['channel'] === 'in_app' ? $rendered : null,
+                'type' => $parsed['channel'] === 'in_app' ? $parsed['module'].'-'.$parsed['action'] : null,
+            ], fn ($value) => $value !== null),
             'queued_at' => Carbon::now(),
         ]);
 

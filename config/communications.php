@@ -1,6 +1,7 @@
 <?php
 
 use Acl\Communications\Channels\MailChannel;
+use Acl\Communications\Channels\InAppChannel;
 use Acl\Communications\Channels\NullChannel;
 use App\Events\RequestCreated;
 
@@ -34,7 +35,7 @@ return [
             'queue_name' => env('COMMUNICATIONS_SMS_QUEUE', 'notifications.sms'),
         ],
         'in_app' => [
-            'driver' => NullChannel::class,
+            'driver' => InAppChannel::class,
             'queue' => false,
             'queue_name' => env('COMMUNICATIONS_IN_APP_QUEUE', 'notifications.in_app'),
         ],
