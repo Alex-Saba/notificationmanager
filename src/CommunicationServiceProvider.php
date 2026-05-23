@@ -18,6 +18,7 @@ use Acl\Communications\Events\NotificationFailed;
 use Acl\Communications\Events\NotificationSent;
 use Acl\Communications\Listeners\CommunicationExposureListener;
 use Acl\Communications\Listeners\CommunicationOutcomeListener;
+use Acl\Communications\Listeners\NotificationListener;
 use Acl\Communications\Services\CommunicationDeliveryService;
 use Acl\Communications\Services\CommunicationResultConsumer;
 use Acl\Communications\Services\CommunicationService;
@@ -60,6 +61,7 @@ class CommunicationServiceProvider extends ServiceProvider
         Event::listen(NotificationSent::class, CommunicationOutcomeListener::class);
         Event::listen(NotificationFailed::class, CommunicationOutcomeListener::class);
         Event::listen(CommunicationOrchestrated::class, CommunicationExposureListener::class);
+        $this->registerApplicationEventListeners();
 
         $this->publishes([
             __DIR__.'/../config/communications.php' => config_path('communications.php'),
@@ -90,5 +92,20 @@ class CommunicationServiceProvider extends ServiceProvider
             ->prefix($prefix)
             ->as($namePrefix)
             ->group(__DIR__.'/../routes/communications-ui.php');
+    }
+
+    protected function registerApplicationEventListeners(): void
+    {
+        foreach ((array) config('communications.events.catalog', []) as $eventClass => $definition) {
+            if (! is_string($eventClass) || ! is_array($definition)) {
+                continue;
+            }
+
+            if (($definition['enabled'] ?? true) === false) {
+                continue;
+            }
+
+            Event::listen($eventClass, NotificationListener::class);
+        }
     }
 }

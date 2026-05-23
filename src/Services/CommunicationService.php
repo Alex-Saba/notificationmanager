@@ -3,7 +3,6 @@
 namespace Acl\Communications\Services;
 
 use Acl\Communications\Contracts\ApplicationEventCatalogInterface;
-use Acl\Communications\Contracts\CommunicationEventInterface;
 use Acl\Communications\Contracts\CommunicationServiceInterface;
 use Acl\Communications\Contracts\NotificationManagerInterface;
 
@@ -15,20 +14,41 @@ class CommunicationService implements CommunicationServiceInterface
     ) {
     }
 
-    public function trigger(CommunicationEventInterface $event): array
+    public function trigger(object $event): array
     {
         $catalogEntry = $this->eventCatalog->lookup($event);
-        $payload = array_merge((array) ($catalogEntry['data'] ?? []), [
-            'user_email' => $catalogEntry['recipient']['address'] ?? null,
-            'user_id' => $catalogEntry['recipient']['id'] ?? null,
-        ]);
+        $entries = isset($catalogEntry['notifications']) && is_array($catalogEntry['notifications'])
+            ? $catalogEntry['notifications']
+            : [$catalogEntry];
 
-        return $this->manager->dispatch(
-            (string) $catalogEntry['event_key'],
-            $payload,
-            [
-                'recipient' => (array) ($catalogEntry['recipient'] ?? []),
-            ],
-        );
+        $results = [];
+        foreach ($entries as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $payload = array_merge((array) ($entry['data'] ?? []), [
+                'user_email' => $entry['recipient']['address'] ?? null,
+                'user_id' => $entry['recipient']['id'] ?? null,
+            ]);
+
+            $results[] = $this->manager->dispatch(
+                (string) $entry['event_key'],
+                $payload,
+                [
+                    'recipient' => (array) ($entry['recipient'] ?? []),
+                ],
+            );
+        }
+
+        if (count($results) === 1) {
+            return $results[0];
+        }
+
+        return [
+            'status' => 'triggered',
+            'event_class' => $event::class,
+            'results' => $results,
+        ];
     }
 }
