@@ -1,29 +1,51 @@
-# NotificationManager
+# ACL NotificationManager
 
-Package Laravel pour envoyer des notifications à partir d'une `event_key`.
+Package Laravel pour envoyer, journaliser et consulter des notifications a partir d'une `event_key`.
 
-Il fait aujourd'hui :
-- catalogue runtime des événements en base
-- validation dynamique du payload
-- résolution de template `options -> DB -> config`
-- rendu HTML
-- envoi mail avec queue optionnelle
-- journalisation dans `communications`
+Il permet de gerer :
 
-## Démarrage Rapide
+- un catalogue runtime des evenements en base ;
+- la validation dynamique du payload ;
+- la resolution des templates `options -> base de donnees -> configuration` ;
+- le rendu HTML ;
+- l'envoi mail avec queue optionnelle ;
+- les notifications in-app ;
+- la journalisation dans la table `communications`.
 
-### 1. Installer
+## Utilisation
+
+### 1. Installer le module :
 
 ```bash
 composer require acl/notification-manager
+```
+
+### 2. Publier la configuration et les migrations :
+
+```bash
 php artisan vendor:publish --tag=communications-config
 php artisan vendor:publish --tag=communications-migrations
 php artisan migrate
 ```
 
-### 2. Déclarer les event keys
+### 3. Configurer le module (fichiers publies dans `config/`) :
 
-Créez ou complétez `config/events.php` dans l'application hôte :
+- `config/communications.php` : definir les canaux, la queue, l'UI optionnelle et le catalogue des events Laravel.
+- `config/events.php` : definir les `event_key`, les schemas de payload, les sujets et les templates par defaut.
+
+Format attendu pour les `event_key` :
+
+```text
+<module>.<action>.<channel>
+```
+
+Exemples :
+
+- `request.created.email`
+- `billing.payment-reminder.email`
+- `billing.reminder.in_app`
+
+### 4. Declarer les evenements disponibles :
 
 ```php
 <?php
@@ -36,40 +58,19 @@ return [
             'requester_name' => 'required|string',
             'user_email' => 'required|email',
         ],
-        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistrée.</p>',
+        'template' => '<p>Bonjour {{ $requester_name }}, votre demande {{ $request_number }} est enregistree.</p>',
         'subject' => 'Nouvelle demande',
-    ],
-
-    'billing.payment-reminder.email' => [
-        'label' => 'Payment reminder email',
-        'payload' => [
-            'name' => 'required|string',
-            'due_date' => 'required|date',
-            'user_email' => 'required|email',
-        ],
-        'template' => '<p>Bonjour {{ $name }}, votre facture arrive à échéance le {{ $due_date }}.</p>',
-        'subject' => 'Rappel de paiement',
     ],
 ];
 ```
 
-Format obligatoire :
-
-```text
-<module>.<action>.<channel>
-```
-
-Exemples : `request.created.email`, `billing.payment-reminder.email`, `request.created.in_app`.
-
-### 3. Synchroniser en base
+### 5. Synchroniser le catalogue en base :
 
 ```bash
 php artisan notifications:sync
 ```
 
-### 4. Configurer le mail
-
-Dans `.env` :
+### 6. Configurer le mail :
 
 ```env
 MAIL_MAILER=smtp
@@ -82,13 +83,7 @@ MAIL_FROM_ADDRESS="no-reply@example.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-### 5. Envoyer un test
-
-```bash
-php artisan tinker
-```
-
-Puis dans Tinker :
+### 7. Envoyer une notification :
 
 ```php
 app(Acl\Communications\Contracts\NotificationManagerInterface::class)->dispatch(
@@ -104,9 +99,9 @@ app(Acl\Communications\Contracts\NotificationManagerInterface::class)->dispatch(
 );
 ```
 
-### 6. Lancer la queue en production
+### 8. Utiliser la queue en production :
 
-Les canaux `email` et `mail` sont configurés en queue par défaut.
+Les canaux `email` et `mail` sont configures en queue par defaut.
 
 ```bash
 php artisan queue:work --queue=notifications.email,notifications.mail
@@ -122,9 +117,7 @@ app(Acl\Communications\Contracts\NotificationManagerInterface::class)->dispatch(
 );
 ```
 
-## Intégration Via Event Laravel
-
-Créer un event applicatif :
+### 9. Integrer un Event Laravel :
 
 ```php
 <?php
@@ -179,15 +172,15 @@ use Illuminate\Support\Facades\Event;
 Event::listen(RequestCreated::class, NotificationListener::class);
 ```
 
-Déclencher :
+Declencher l'event :
 
 ```php
 event(new RequestCreated('REQ-2026-001', 'Alex', 'alex@example.test', 42));
 ```
 
-## UI Optionnelle
+### 10. Activer l'UI optionnelle :
 
-L'UI est désactivée par défaut.
+L'UI est desactivee par defaut.
 
 ```env
 COMMUNICATIONS_UI_ENABLED=true
@@ -195,31 +188,30 @@ COMMUNICATIONS_UI_PREFIX=communications
 COMMUNICATIONS_UI_VIEW=welcome
 ```
 
-Routes :
+Routes pages :
 
-```text
-GET /communications/templates
-GET /communications/notifications
+- `GET /communications/templates`
+- `GET /communications/notifications`
+
+Routes API utilisees par l'UI :
+
+- `GET /communications/api/templates`
+- `GET /communications/api/templates/{id}`
+- `GET|POST /communications/api/notifications`
+- `GET|DELETE /communications/api/notifications/{id}`
+- `PATCH /communications/api/notifications/{id}/read`
+- `PATCH /communications/api/notifications/{id}/unread`
+
+### 11. Tester rapidement le module :
+
+```bash
+php artisan communications:test-send --email=alex@example.test --name=Alex --request=REQ-2026-001
+php artisan communications:simulate-payment-reminder payment-reminder --email=alex@example.test --name=Alex --due=2026-03-31
 ```
 
-API utilisée par l'UI :
+## Resolution De Template
 
-```text
-GET    /communications/api/templates
-GET    /communications/api/templates/{id}
-GET    /communications/api/notifications
-POST   /communications/api/notifications
-GET    /communications/api/notifications/{id}
-PATCH  /communications/api/notifications/{id}/read
-PATCH  /communications/api/notifications/{id}/unread
-DELETE /communications/api/notifications/{id}
-```
-
-L'écran templates est en lecture seule. La création de templates se fait par seed, migration, import ou code applicatif hôte.
-
-## Résolution De Template
-
-Priorité :
+Priorite de resolution :
 
 1. `options['template']`
 2. table `communication_templates` par `event_key` et `tenant_id`
@@ -233,35 +225,8 @@ app(Acl\Communications\Contracts\NotificationManagerInterface::class)->dispatch(
     $payload,
     [
         'template' => '<p>Bonjour {{ $requester_name }}</p>',
-        'subject' => 'Sujet personnalisé',
+        'subject' => 'Sujet personnalise',
         'queue' => false,
     ],
 );
 ```
-
-## Tables
-
-- `notification_events` : catalogue runtime, payload schema, activation
-- `communication_templates` : templates actifs par `event_key`
-- `communications` : historique des envois, statuts, payload, rendu
-- `communication_rules` : conservée pour les évolutions multi-canaux futures
-
-## Commandes Utiles
-
-```bash
-php artisan notifications:sync
-php artisan communications:test-send
-php artisan communications:simulate-payment-reminder payment-reminder --email=alex@example.test --name="Alex" --due=2026-03-31
-php artisan test
-npm run build
-```
-
-## Fichiers Importants
-
-- `src/Contracts/NotificationManagerInterface.php`
-- `src/Services/NotificationManager.php`
-- `src/Services/NotificationTemplateResolver.php`
-- `src/Services/CommunicationService.php`
-- `src/Console/Commands/SyncNotificationEventsCommand.php`
-- `src/CommunicationServiceProvider.php`
-- `config/communications.php`
