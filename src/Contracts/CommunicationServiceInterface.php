@@ -10,5 +10,5 @@ interface CommunicationServiceInterface
      *
      * @return array<string, mixed>
      */
-    public function trigger(CommunicationEventInterface $event): array;
+    public function trigger(object $event): array;
 }

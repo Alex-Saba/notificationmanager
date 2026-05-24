@@ -7,5 +7,5 @@ interface ApplicationEventCatalogInterface
     /**
      * @return array<string, mixed>
      */
-    public function lookup(CommunicationEventInterface $event): array;
+    public function lookup(object $event): array;
 }

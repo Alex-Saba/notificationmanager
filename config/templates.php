@@ -5,8 +5,8 @@ return [
     'seed_defaults' => env('TEMPLATES_SEED_DEFAULTS', true),
 
     // Mode d'utilisation :
-    // - le projet principal declare explicitement les entites et les proprietes disponibles
-    // - ajoutez une entree par entite a exposer dans les tags du WYSIWYG
+    // - le projet principal déclare explicitement les entités et les propriétés disponibles
+    // - ajoutez une entrée par entité à exposer dans les tags disponibles pour les templates
     //
     // Exemple :
     // [

@@ -15,7 +15,8 @@ class LaravelApplicationEventConsumer implements ApplicationEventConsumerInterfa
 
     public function canConsume(object $event): bool
     {
-        return $event instanceof CommunicationEventInterface;
+        return $event instanceof CommunicationEventInterface
+            || is_array(config('communications.events.catalog.'.$event::class));
     }
 
     public function consume(object $event): array
